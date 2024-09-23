@@ -1,0 +1,54 @@
+project:
+  type: book
+  output-dir: docs
+
+book:
+  title: Analysis of Age and Gender Characteristics Among Patients with Mental Disorders
+  author: Yunqi (Janie) Chen
+  #subtitle: 
+  date: last-modified
+  date-format: "D MMMM YYYY"
+  search: true
+  downloads: [pdf]
+  chapters:
+    - index.qmd
+    - chap1-prevalence-of-md.qmd
+    - chap2-cmhc.qmd
+    - chap3-shs.qmd
+    - chap4-rmhc.qmd
+    - chap5-dis.qmd
+
+execute:
+  echo: false
+  warning: false
+  
+format:
+  html: 
+    theme: cosmo
+    code-link: true
+    cap-location: top
+    fig-align: left
+    
+    fig-cap-location: top
+    title-block-banner: true
+    
+    embed-resources: true
+
+  pdf:
+    keep-tex: true  # use this for debugging
+    documentclass: scrreport
+    #classoption: []
+    toc: true
+    number-sections: true
+    colorlinks: false
+    papersize: A4
+    margin-left: "2.54 cm"
+    margin-right: "2.54 cm"
+    margin-top: "2.54 cm"
+    margin-bottom: "2.54 cm"
+    mainfont: ClearSans
+    
+    fig-cap-location: top
+
+
+

@@ -1,0 +1,552 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Prevalence of mental disorders among adults
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+
+## About the data
+
+The 2020-21 National Study of Mental Health and Wellbeing (NSMHW) measures the prevalence of mental disorders among Australians aged 16-85 years using the World Health Organization Composite International Diagnostic Interview.
+
+Respondents were asked about their experiences and symptoms of mental ill-health throughout their lifetime, from which two key measures are analysed:
+
+-   **lifetime mental disorders**, which refers to the number of people who met the diagnostic criteria for having a mental disorder at some time in their life. This does not imply that a person has had a mental disorder throughout their entire life
+
+-   **12-month mental disorders**, which refers to the number of people who met the diagnostic criteria for having a mental disorder at some time in their life and had sufficient symptoms of that disorder in the 12 months prior to the survey.
+
+Three groups of mental disorders are assessed---Anxiety, Affective and Substance Use disorders---based on definitions and criteria of the World Health Organization International Classification of Diseases, Tenth Revision.
+
+The data used for this section came from two sources:
+
+1.  [Report on Government Services 2023](https://www.pc.gov.au/ongoing/report-on-government-services/2023/health/services-for-mental-health)
+
+2.  [National Study of Mental Health and Wellbeing](https://www.abs.gov.au/statistics/health/mental-health/national-study-mental-health-and-wellbeing/latest-release#prevalence-of-mental-disorders)
+
+*Note: Due to COVID-related difficulties with in-person data collection during 2021, the National Study of Mental Health and Wellbeing (NSMHW) was conducted in two parts from 2020 to 2022. As a result, only national totals are available for reporting in 2023. These data **should not be compared to the 2007 survey** due to a smaller sample size in 2020-2021. (State and territory data are expected to be available for the 2024 Report.)*
+
+```{r}
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs45 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-sex.rds"
+)) %>% 
+  select(-c(Data_Source, Description6))
+
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs46 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-age.rds"
+)) %>% 
+  select(-c(Data_Source, Description4))
+```
+
+```{r}
+# load the data
+abs3_data_dir <- file.path(here::here(), "data", "ABS")
+abs3 <- readRDS(file.path(
+  abs3_data_dir,
+  "abs-12-month-mental-disorders-by-age-and-sex.rds"
+))
+
+# remove some words for visualization
+abs3$disorder_types <- gsub(" mental disorder"," MD",abs3$disorder_types)
+abs3$disorder_types <- gsub(" disorders","",abs3$disorder_types)
+
+# remove no 12-month md
+abs3 <- abs3 %>% 
+  filter(disorder_types != "No 12-month MD")
+
+# factors for plot
+abs3$disorder_types <- factor(abs3$disorder_types, levels = c("Any 12-month MD", "Anxiety", "Affective","Substance Use"))
+
+# change name for "bigger age gap" group
+abs3_type1 <- abs3 %>% 
+  filter(age_group_type == "type1") %>% 
+  mutate(age_group = case_when(
+    age_group == "16-34" ~ "Young (16-34)",
+    age_group == "35-64" ~ "Middle-Aged (35-64)",
+    age_group == "65-85" ~ "Older (65-85)"
+  ))
+
+abs3_type1$age_group <- factor(abs3_type1$age_group, levels = c("Young (16-34)", "Middle-Aged (35-64)","Older (65-85)"))
+
+
+#Table name is *`r abs3$table_name[1]`*.
+#Table code is *`r abs3$table_code[1]`*.
+#Data source is *`r abs3$source[1]`*.
+```
+
+## Mental Health Status
+
+### By Sex
+
+```{r}
+# Data wrangling 
+tab <- rogs45 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3,
+    specific_disorder = Description4)
+
+tab$disorder_timeframe <- str_replace_all(tab$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+# plot
+disorder_timeframe <- tab %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+highlight <- disorder_timeframe$disorder_timeframe == "Any 12-month mental disorder"
+```
+
+
+```{r}
+#| label: fig-mhss
+#| fig-cap: Mental Health Status by Sex, 2007 and 2020-21
+ggplot(disorder_timeframe %>% 
+         filter(disorder_timeframe != "No lifetime mental disorder"), aes(x = Sex, y = Aust, fill = disorder_timeframe))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year,ncol=1)+
+  #coord_flip()+
+  labs(x = "Status",
+       y = "Percentage of all population (%)")+
+  theme_bw()+
+  theme(legend.position = "bottom")+
+  scale_fill_manual(values = c( "#FF6969","#BB2525"),
+                    name = "Status")
+  # theme(axis.text.y = element_text(
+  #   color = ifelse(highlight, "#BB2525", "black"),
+  #   face = ifelse(highlight, "bold", "plain")
+  # ))
+```
+
+*Note: According to AIHW, 2007 and 2020-21 have different sample sizes, so be cautious when comparing.*
+
+### By Age Group
+
+```{r}
+# Data wrangling 
+tab_46 <- rogs46 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3)
+
+tab_46$disorder_timeframe <- str_replace_all(tab_46$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+tab_46$Age <- gsub(" years old","",tab_46$Age)
+```
+
+
+```{r}
+#| label: fig-mhsag
+#| fig-cap: Mental Health Status by Age Group, 2007 and 2020-21
+disorder_timeframe_46 <- tab_46 %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+ggplot(disorder_timeframe_46 %>% 
+         filter(disorder_timeframe != "No lifetime mental disorder"), aes(x = Age, y = Aust, fill = disorder_timeframe))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year,
+             ncol = 1)+
+  scale_fill_manual(values = c( "#FF6969","#BB2525"),
+                    name = "Status")+
+  labs(y = "Percentage of all population (%)",
+       x = "Age group")+
+  theme_bw()+
+  theme(legend.position = "bottom")
+```
+
+*Note: According to AIHW, 2007 and 2020-21 have different sample sizes, so be cautious when comparing.*
+
+### Summary
+
+-   In both 2007 and 2020-21, a higher proportion of females reported experiencing symptoms of mental disorders in the 12 months leading up to the survey. In contrast, a more significant percentage of males reported lifetime mental disorders but did not exhibit symptoms in the 12 months prior to the survey.
+
+-   In 2020-21, nearly 40% of individuals aged 16-24 reported experiencing mental disorders in the 12 months prior to the survey. This prevalence declined with increasing age.
+
+-   For those aged 25-74, between 20% and 30% reported having lifetime mental disorders without symptoms in the past 12 months. For the age groups 16-24 and 75-85, the figures stood at approximately 10% and 15%, respectively.
+
+## 12-Month Mental Disorder Categories
+
+### By Sex
+
+```{r}
+disorder_group <- tab %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+
+disorder_group_ttl <- disorder_group %>%
+  filter(specific_disorder=="") 
+disorder_group_ttl$disorder_group <- gsub("Any ","",disorder_group_ttl$disorder_group)
+disorder_group_ttl$disorder_group <- tools::toTitleCase(disorder_group_ttl$disorder_group)
+```
+
+
+```{r}
+#| label: fig-12s
+#| fig-cap: Mental Disorder Categories by Sex, 2007 and 2020-21
+ggplot(disorder_group_ttl, aes(x = disorder_group, y = Aust, fill = Sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(.~Year, ncol = 1)+
+  #coord_flip()+
+  labs(x = "Categories",
+       y = "Percentage of all population (%)")+
+  theme_bw()+
+  theme(legend.position = "bottom")
+```
+
+*Note: According to AIHW, 2007 and 2020-21 have different sample sizes, so be cautious when comparing.*
+
+### By Age Group
+
+```{r}
+disorder_group_46 <- tab_46 %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+```
+
+
+```{r}
+#| label: fig-12a
+#| fig-cap: Mental Disorder Categories by Age Group, 2007 and 2020-21
+ggplot(disorder_group_46, aes(x = Age, y = Aust, fill = disorder_group))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year, ncol = 1)+
+  labs(y = "Percentage of all population (%)",
+       x = "Age group")+
+  theme_bw()+
+  scale_fill_brewer(palette = "Dark2", name = "Categories")+
+  theme(legend.position = "bottom")
+```
+
+*Note: According to AIHW, 2007 and 2020-21 have different sample sizes, so be cautious when comparing.*
+
+### Subcategories
+
+```{r}
+specific_disorder_tab <- disorder_group %>% 
+  filter(specific_disorder!="") %>% 
+  pivot_wider(names_from = c(Sex,Year),
+              values_from = Aust)
+```
+
+```{r}
+#| label: tbl-sub
+#| tbl-cap: Prevalence of 12-Month Mental Disorders by Subcategory for 2020-21 and 2007
+specific_disorder_tab %>% 
+  select(-disorder_group) %>% 
+  kbl(col.names = c("Disorder Types",rep(c("Male(%)","Female(%)","All(%)"),2))) %>% 
+  kable_paper("striped", full_width = F) %>%  
+  add_header_above(c(" "=1, "2020-21"=3, "2007"=3), bold = TRUE) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  pack_rows("Anxiety disorders",1,6) %>% 
+  pack_rows("Affective disorders",7,9) %>% 
+  pack_rows("Substance use disorders",10,12) %>% 
+  column_spec(c(2,5), color = "#2196F3") %>% 
+  column_spec(c(3,6), color = "#F44336")
+  
+```
+
+*Note: According to AIHW, 2007 and 2020-21 have different sample sizes, so be cautious when comparing.*
+
+### Summary
+
+-   In 2007, the prevalence of Affective disorders was consistent for people aged 16-74, while in 2020-21, it is more common among young individuals.
+
+-   The prevalence of both Anxiety disorders and Substance use disorders in both 2007 and 2020-21 generally showed a decreasing trend with increasing ages.
+
+-   The prevalence of Anxiety Disorder is twice as high as the other two. Additionally, the prevalence among females is nearly double that among males, especially in Agoraphobia, Social phobia, and Post-traumatic stress disorder.
+
+-   Males had almost twice the rate of Substance Use disorder than females, especially in Alcohol harmful use.
+
+## 12-Month Mental Health Disorder Characteristics
+
+*Note:*
+
+-   *Some of the prevalence number data have a relatively high standard error and should be used with caution.*
+
+-   *Percentage has a high margin of error and should be used with caution.*
+
+-   *The data have been randomly adjusted to avoid the release of confidential data. Discrepancies may occur between sums of the component items and totals.*
+
+### By Age Group (Generation)
+
+```{r}
+ttl_pop1 <- abs3_type1 %>% 
+  filter(sex == "Persons",
+         name == "Estimates")
+
+pagn <- ggplot(ttl_pop1, aes(x = disorder_types, 
+                     y = value, 
+                     fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Number",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+ttl_pro1 <- abs3_type1 %>% 
+  filter(
+         sex == "Persons",
+         name == "Proportions")
+
+pagp <- ggplot(ttl_pro1, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Percentage",
+       x = "Disorder types",
+       y = "Percentage of each age group (%)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+```
+
+
+```{r}
+#| label: fig-12ag
+#| fig-cap: EST. Prevalence Number and Percentage by Generation, 2020–21
+
+grid.arrange(pagn,pagp, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Age Group (Decadal)
+
+```{r}
+ttl_pop2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Estimates")
+
+ttl_pop_p <- ggplot(ttl_pop2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Number",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+ttl_pro2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Proportions")
+
+ttl_pro_p <- ggplot(ttl_pro2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Percentage",
+       x = "Disorder types",
+       y = "Percentage of each age group (%)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+#| label: fig-12ad
+#| fig-cap: EST. Prevalence Number and Percentage by Decadal Age Group, 2020–21
+grid.arrange(ttl_pop_p,ttl_pro_p, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Sex
+
+```{r}
+ttl_pop_sex1 <- abs3 %>% 
+  filter(sex != "Persons",
+         name == "Estimates")
+
+ttl_pop_sex_p <- ggplot(ttl_pop_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Number",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+
+
+ttl_pro_sex1 <- abs3 %>% 
+  filter(age_group_type == "Total",
+         name == "Proportions",
+         sex != "Persons")
+
+ttl_pro_sex_p <- ggplot(ttl_pro_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Percentage",
+       x = "Disorder types",
+       y = "Percentage of each sex (%)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+```
+
+
+```{r}
+#| label: fig-12as
+#| fig-cap: EST. Prevalence Number and Percentage by Sex, 2020–21
+grid.arrange(ttl_pop_sex_p,ttl_pro_sex_p, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Generation and Sex
+
+```{r}
+#| label: fig-12gsn
+#| fig-cap: EST. Prevalence Number by Generation and Sex, 2020–21
+
+big_pop_sex <- abs3_type1 %>% 
+  filter(age_group_type == "type1",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(big_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+
+```
+
+
+```{r}
+#| label: fig-12gsp
+#| fig-cap: Prevalence Percentage by Generation and Sex, 2020–21
+
+big_pro_sex <- abs3_type1 %>% 
+  filter(age_group_type == "type1",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(big_pro_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(x = "Disorder types",
+       y = "Percentage (%)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+  # theme(legend.position = "bottom")
+
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Decadal Age Group and Sex
+
+```{r}
+#| label: fig-12dgn
+#| fig-cap: EST. Prevalence Number by Decadal Age Group and Sex, 2020–21
+
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 2)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+  # theme(legend.position = "bottom")
+```
+
+
+```{r}
+#| label: fig-12dgp
+#| fig-cap: Prevalence Percentage by Decadal Age Group and Sex, 2020–21
+
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(x = "Disorder types",
+       y = "Percentage (%)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol=2)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+  # theme(legend.position = "bottom")
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### Summary
+
+-   The prevalence of 12-month mental disorders is highest among young individuals, particularly those aged 16-24, and generally decreases with age.
+
+-   Females consistently show a higher prevalence than males across all age groups.
+
+-   Except for the age group 25-34, males have higher Substance Use Disorders than females, with a particularly noticeable high prevalence in the 16-24 and 35-54 age groups.
+
+-   Females exhibit a remarkably higher prevalence of Anxiety Disorders across all age groups.
+
+-   The prevalence of Affective Disorders is generally higher among females than males across all age groups, except for 55-64.

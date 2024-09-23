@@ -1,0 +1,316 @@
+---
+title: "Community mental health care service"
+subtitle: "(AIHW CMHC.9 & 10)"
+author: "Janie Chen"
+format: html
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: FALSE
+  echo: True
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(forcats)
+library(cowplot)
+```
+
+# By demographic characteristics, states and territories
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+aihw9 <- readRDS(file.path(
+  data_dir,
+  "patients-by-demographic-states.rds"
+))
+```
+
+Table name: *`r aihw9$table_name[1]`*. 
+
+Table code: *`r aihw9$table_code[1]`*. 
+
+Data source: *`r aihw9$source[1]`*.
+
+```{r, eval=FALSE}
+unique(aihw9$count)
+unique(aihw9$demographic)
+glimpse(aihw9)
+```
+
+```{r}
+# function for generating a total plot
+demographic_plot <- function(input_demographic, input_count){
+  data <- aihw9 %>% 
+    filter(demographic == input_demographic,
+         count == input_count)
+  
+  ggplot(data, aes(x = demographic_variable, y = value))+
+    geom_col()+
+    scale_y_continuous(labels = comma)
+}
+
+# function for generating number, percent, rate plots into one
+count_demographic_plot <- function(input_demographic, 
+                                   flip = FALSE){
+  
+  ttl_number_plot <- demographic_plot(input_demographic, "Number")+
+  labs(x = input_demographic,
+       y = "Number")
+  
+  ttl_percentage_plot <- demographic_plot(input_demographic, "Per_cent")+
+    labs(x = input_demographic,
+         y = "Percentage")
+  
+  ttl_rate_plot <- demographic_plot(input_demographic, "Rate_per_1000_population")+
+    labs(x = input_demographic,
+         y = "Rate (per 1,000 population)")
+  
+  if(flip){
+    ttl_number_plot <- ttl_number_plot + coord_flip()
+    ttl_percentage_plot <- ttl_percentage_plot + coord_flip()
+    ttl_rate_plot <- ttl_rate_plot + coord_flip()
+    
+    combined_plot <- grid.arrange(ttl_number_plot,ttl_percentage_plot,ttl_rate_plot, ncol=1, top = paste("Number, Percentage and Rate values for", input_demographic))
+  } else{
+    combined_plot <- grid.arrange(ttl_number_plot,ttl_percentage_plot,ttl_rate_plot, nrow=1, top = paste("Number, Percentage and Rate values for", input_demographic))
+  }
+  
+  return(combined_plot)
+}
+```
+
+
+```{r}
+# function for generating three separate plots by states
+demographic_by_state_plot <- function(input_demographic, 
+                                      flip = FALSE,
+                                      seifa_sub = FALSE){
+  np <- demographic_plot(input_demographic, "Number")+
+    facet_wrap(~states_and_territories)+
+    labs(x = input_demographic,
+         y = "Number",
+         title = paste(input_demographic, "Number"))
+  
+  pp <- demographic_plot(input_demographic, "Per_cent")+
+    facet_wrap(~states_and_territories)+
+    labs(x = input_demographic,
+         y = "Per cent",
+         title = paste(input_demographic, "Per cent"))
+  
+  rp <-demographic_plot(input_demographic, "Rate_per_1000_population")+
+    facet_wrap(~states_and_territories)+
+    labs(x = input_demographic,
+         y = "Rate (per 1,000 population)",
+         title = paste(input_demographic, "Rate (per 1,000 population)"))
+  
+  if(flip){
+    np <- np + coord_flip()
+    pp <- pp + coord_flip()
+    rp <- rp + coord_flip()
+  }
+  
+  if(seifa_sub){
+    np <- np + labs(subtitle = "Q1 (most disadvantaged) - Q5 (least disadvantaged)")
+    pp <- pp + labs(subtitle = "Q1 (most disadvantaged) - Q5 (least disadvantaged)")
+    rp <- rp + labs(subtitle = "Q1 (most disadvantaged) - Q5 (least disadvantaged)")
+  }
+  
+  return(list(np, pp, rp))
+}
+```
+
+## SEIFA quintiles 
+
+*SEIFA: Socio-Economic Indexes for Areas
+
+*Q1: Quintile 1 (most disadvantaged) - Q5: Quintile 5 (least disadvantaged)
+
+```{r}
+aihw9$demographic_variable <- gsub("Q[^0-9]*(\\d+)", "Q\\1",
+                                   aihw9$demographic_variable)
+aihw9$demographic_variable <- gsub("\\(.*?\\)","",
+                                   aihw9$demographic_variable)
+```
+
+
+```{r, eval=FALSE}
+## Total SEIFA quintiles by states and territories
+qn <- aihw9 %>% 
+  filter(demographic == "Total SEIFA quintiles",
+         count == "Number")
+qn$states_and_territories <- reorder(qn$states_and_territories, -qn$value)
+
+qnp <- ggplot(qn, aes(x = states_and_territories, y = value)) +
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  labs(x = "States and territories",
+       y = "Number")
+
+qr <- aihw9 %>% 
+  filter(demographic == "Total SEIFA quintiles",
+         count == "Rate_per_1000_population")
+qr$states_and_territories <- reorder(qr$states_and_territories, -qr$value)
+
+qrp <- ggplot(qr, aes(x = states_and_territories, y = value)) +
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  labs(x = "States and territories",
+       y = "Rate (per 1,000 population)")
+
+grid.arrange(qnp,qrp, nrow=1, top = "Total SEIFA quintiles number and rate by states and territories")
+```
+
+### Total SEIFA quintiles distribution
+
+```{r, output=FALSE}
+note <- "Q1 (most disadvantaged) - Q5 (least disadvantaged)"
+s_ttl_p <- count_demographic_plot("SEIFA quintiles")
+```
+
+
+```{r}
+ggdraw(s_ttl_p)+
+  draw_plot_label(label = note,
+                  x = 0, 
+                  y = 0, 
+                  hjust = 0, 
+                  vjust = 0, 
+                  size = 9)
+```
+
+### SEIFA quintiles values by states and territories
+
+```{r}
+demographic_by_state_plot("SEIFA quintiles", seifa_sub = TRUE)
+```
+
+## Patients' age groups
+
+```{r}
+aihw9$demographic_variable <- gsub(" years","", aihw9$demographic_variable)
+
+aihw9$demographic_variable <- fct_relevel(aihw9$demographic_variable, 
+                                          c("0-4", "5-11", "12-17", "18-24", 
+                                            "25-34", "35-44", "45-54", "55-64",
+                                            "65-74", "75-84", "85 and over"))
+```
+
+### Total Patient's age group distribution
+
+```{r}
+count_demographic_plot("Age group", flip = TRUE)
+```
+
+### Age group values by states and territories
+
+```{r}
+demographic_by_state_plot("Age group", flip = TRUE)
+```
+
+## Patients' sex 
+
+## Total Patient's sex distribution
+
+```{r}
+count_demographic_plot("Sex")
+```
+
+### Sex values by states and territories
+
+```{r}
+demographic_by_state_plot("Sex")
+```
+
+
+# CMHC contacts per 1,000 population
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+
+aihw10 <- readRDS(file.path(
+  data_dir,
+  "contacts-per1000-sex-age.rds"
+))
+
+aihw10$year <- gsub("–\\d{2}", "", aihw10$year)
+aihw10$year <- as.numeric(aihw10$year)
+```
+
+Table name: *`r aihw10$table_name[1]`*. 
+
+Table code: *`r aihw10$table_code[1]`*. 
+
+Data source: *`r aihw10$source[1]`*.
+
+
+## Average Annual Change
+
+```{r}
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+ap <- aihw10 %>% 
+  group_by(age_group,sex) %>% 
+  summarise(avg = mean(average_annual_change_per_cent_2016_17_to_2020_21))
+
+#ap$age_group <- factor(ap$age_group, levels = age_group_levels)
+
+a_hline <- ap %>% filter(age_group == "Total", sex == "All_persons") %>% pull(avg)
+f_hline <- ap %>% filter(age_group == "Total", sex == "Females") %>% pull(avg)
+m_hline <- ap %>% filter(age_group == "Total", sex == "Males") %>% pull(avg)
+
+ggplot(ap, 
+       aes(x = age_group,
+           y = avg,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age groups",
+       y = "Average annual change (per cent)",
+       title = "Average Annual Change Percent by Sex and Age group, 2016–17 to 2020–21")+
+  geom_hline(yintercept = a_hline, linetype = "dashed", color = "#4CAF50")+
+  geom_hline(yintercept = f_hline, linetype = "dashed", color = "#F44336")+
+  geom_hline(yintercept = m_hline, linetype = "dashed", color = "#2196F3")+
+  geom_text(aes(x = "85+", y = a_hline, label = "avg. All persons"), hjust = 0.8, vjust = -0.5, size = 3, color = "#4CAF50") +
+  geom_text(aes(x = "85+", y = f_hline, label = "avg. Females"), hjust = 0.8, vjust = -0.5, size = 3, color = "#F44336") +
+  geom_text(aes(x = "85+", y = m_hline, label = "avg. Males"), hjust = 0.8, vjust = -0.5, size = 3, color = "#2196F3")
+  
+```
+
+
+## Changes Over Time by Age Group
+
+### Male Patients
+
+```{r}
+mts <- aihw10 %>% 
+  filter(sex == "Males")
+
+ggplot(mts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)",
+       title = "Male Patients Contacts Change by Age Groups")
+```
+
+### Female Patients
+
+```{r}
+fts <- aihw10 %>% 
+  filter(sex == "Females")
+
+ggplot(fts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)",
+       title = "Female Patients Contacts Change by Age Groups")
+```

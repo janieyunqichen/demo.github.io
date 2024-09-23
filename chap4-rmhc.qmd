@@ -1,0 +1,296 @@
+
+# Residential Mental Health Care (RMHC) Services
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+
+## About the Data
+
+**Residential mental health care (RMHC)** services provide specialised mental health care on an overnight basis in a domestic-like environment. RMHC services may include rehabilitation, treatment or extended care.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/residential-services).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc3 <- readRDS(file.path(
+  data_dir,
+  "rmhc3-ppl-accessing-rmhc.rds"
+))
+
+
+# Table name: *`r rmhc3$table_name[1]`*. 
+# 
+# Table code: *`r rmhc3$table_code[1]`*. 
+# 
+# Data source: *`r rmhc3$source[1]`*.
+```
+
+## Resident Characteristics
+
+*Note: A **resident** is a person who receives residential care intended to be for a minimum of 1 night.*
+
+### By Age Group
+
+```{r}
+#| label: fig-rmhc-ra
+#| fig-cap: People Accessing RMHC Services by Age Group, 2020-21
+rmhc3 %>% 
+  filter(demographic == "Age_group") %>% 
+  ggplot(aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age group",
+       y = "Value")+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  theme(legend.position = "none")
+```
+
+### By Sex
+
+```{r}
+#| label: fig-rmhc-rs
+#| fig-cap: People Accessing RMHC Services by Sex, 2020-21
+
+rmhc3 %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 3)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value")+
+  theme_bw()+
+  scale_fill_manual(values = sex_palette2)+
+  theme(legend.position = "none")
+```
+
+### Summary
+
+-   Individuals aged 18-24 have the highest rate of accessing RMHC, at approximately 6 per 10,000 population. For those aged 25-54, the rate stabilizes at around 4 per 10,000.
+
+-   Females have a higher rate, population, and percentage of accessing RMHC.
+
+## RMHC Service Episodes Rate
+
+**Episodes of residential care** are defined as a period of care between the start of residential care (either through the formal start of the residential stay or the start of a new reference period (that is, 1 July)) and the end of residential care (either through the formal end of residential care, commencement of leave intended to be greater than 7 days, or the end of the reference period (that is, 30 June)). An individual can have one or more episodes of care during the reference period.
+
+```{r}
+# load the data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc4 <- readRDS(file.path(
+  data_dir,
+  "rmhc4-rmhc-by-sex-age-states.rds"
+))
+
+
+# Table name: *`r rmhc4$table_name[1]`*. 
+# 
+# Table code: *`r rmhc4$table_code[1]`*. 
+# 
+# Data source: *`r rmhc4$source[1]`*.
+```
+
+```{r}
+# load the data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc7 <- readRDS(file.path(
+  data_dir,
+  "rmhc7-rmhc-ts-by-age-sex.rds"
+))
+
+rmhc7_rsa <- rmhc7 %>% 
+  filter(count == "Rate_per_10_000_population",
+         demographic %in% c("Sex", "Age_group"))
+rmhc7_rsa$year <- gsub("–\\d{2}", "", rmhc7_rsa$year)
+rmhc7_rsa$year <- as.numeric(rmhc7_rsa$year)
+
+# Table name: *`r rmhc7$table_name[1]`*. 
+# 
+# Table code: *`r rmhc7$table_code[1]`*. 
+# 
+# Data source: *`r rmhc7$source[1]`*.
+
+```
+
+### General Sex and Age Characteristics
+
+#### By Sex and Age Group
+
+```{r}
+#| label: fig-rmhc-gsa
+#| fig-cap: Episodes Rate by Age Group and Sex, 2020-21
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+rmhc4 %>% 
+  filter(count != "Number",
+         states_and_territories == "Total") %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Rate (per 10,000 population)",
+       fill = "Sex")+
+  theme_bw()
+```
+
+#### Summary
+
+-   Females aged 18-24 exhibit an exceptionally high episode rate, exceeding 10 per 10,000 population.
+
+-   For ages 25-54, the episode rates are generally similar across both genders, though slightly higher for females, with an average of about 5 per 10,000 population.
+
+-   Young girls aged 12-17 experience exceptionally higher episode rates than boys in the same age group.
+
+### Sex and Age Characteristics by States or Territories
+
+#### By Sex and States or Territories
+
+```{r}
+#| label: fig-rmhc-gss
+#| fig-cap: Episodes Rate by Sex and States or Territories, 2020-21
+rmhc4 %>% 
+  filter(count != "Number",
+         #states_and_territories != "Total",
+         age_group != "Total") %>% 
+  ggplot(aes(x = states_and_territories, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "States or territories",
+       y = "Rate (per 10,000 population)",
+       fill = "Sex")+
+  theme_bw()
+```
+
+*Note: Data for **ACT** is not applicable and should not be interpreted as zero. Some data for **NSW** is rounded to zero.*
+
+#### By Sex, Age Group, States or Territories
+
+```{r}
+#| label: fig-rmhc-gsas
+#| fig-cap: Episodes Rate by Sex, Age Group, States or Territories, 2020-21
+rmhc4 %>% 
+  filter(count != "Number",
+         age_group != "Total",
+         states_and_territories != "Total"
+         ) %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(~states_and_territories,
+             ncol = 2)+
+  labs(x = "Age group",
+       y = "Rate (per 10,000 population)",
+       fill = "Sex")+
+  theme_bw()
+```
+
+*Note: Data for **ACT** is not applicable and should not be interpreted as zero. Some data for **NSW** is rounded to zero.*
+
+#### Summary
+
+-   Tasmania has the highest episode rate among all states or territories, while New South Wales registers have the lowest, nearly reaching zero.
+
+-   Female rates are generally higher across most states or territories, notably among young women aged 18-24 in Victoria and South Australia.
+
+-   The Northern Territory is an exception where the male rate is about double the female rate, attributed to a low female rate.
+
+-   Episode rates in Queensland and Western Australia are moderate, with all values less than 10 per 10,000 population.
+
+### Episode Rates Changes Over Time
+
+#### Average Annual Episodes Change
+
+```{r}
+## Load data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc6 <- readRDS(file.path(
+  data_dir,
+  "rmhc6-rmhc-per-10000-pop-by-sex-n-age.rds"
+))
+
+rmhc6$year <- gsub("–\\d{2}", "", rmhc6$year)
+rmhc6$year <- as.numeric(rmhc6$year)
+
+# Table name: *`r rmhc6$table_name[1]`*. 
+# 
+# Table code: *`r rmhc6$table_code[1]`*. 
+# 
+# Data source: *`r rmhc6$source[1]`*.
+```
+
+```{r}
+#| label: fig-rmhc-asa
+#| fig-cap: Average Annual Episodes Change by Sex and Age group, 2016–17 to 2020–21
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+ggplot(rmhc6, 
+       aes(x = age_group,
+           y = average_annual_change_per_cent_2016_17_to_2020_21,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Average annual change (%)",
+       fill = "Sex")+
+  theme_bw()
+  
+```
+
+#### Episodes Changes Over the Year by Age and Sex
+
+```{r}
+#| label: fig-rmhc-cras
+#| fig-cap: Change of Episodes Rate by Sex Over Year 2005–06 to 2020–21
+rmhc7_rsa %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = year, y = value, color = demographic_variable)) +
+  geom_line()+
+  labs(x = "Year",
+       y = "Rate (per 10,000 population)",
+       color = "Sex")+
+  theme_bw()+
+  scale_color_manual(values = sex_palette2)
+
+# for analysis
+rmhc7_a <- rmhc7_rsa %>% 
+  filter(demographic == "Sex",
+         year == min(year) | year == max(year)) 
+```
+
+```{r}
+#| label: fig-rmhc-cnas
+#| fig-cap: Change of Episodes Number by Age and Sex Over Year 2005–06 to 2020–21
+ggplot(rmhc6, aes(x = year, y = episodes_per_10_000_pop, color = sex)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Episodes (per 10,000 population)",
+       color = "Sex")+
+  scale_color_manual(values = sex_palette)+
+  theme_bw()
+```
+
+### Summary
+
+-   From 2005-06 to 2020-21, the female episode rate quadrupled from 0.9 to 3.9, while the male rate doubled.
+
+-   From 2005 to 2012, the male episode rate was higher than females; between 2012 and 2015, the rates for both genders were the same; from 2015 onwards, the female episode rate surpassed the male rate. This symptom is largely driven by the trend in young women aged 18-24.

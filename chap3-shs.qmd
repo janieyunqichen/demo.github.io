@@ -1,0 +1,106 @@
+
+# Specialist Homelessness Services
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+## About the Data
+
+This section is about the clients who identified as having a current mental health issue and received specialist homelessness services (SHS).
+
+**Specialist homelessness service(s) (SHS)** is assistance provided by a specialist homelessness agency to a client aimed at responding to or preventing homelessness. The specialist homelessness services in scope for this collection include accommodation provision, assistance to sustain housing, mental health services, family/relationship assistance, disability services, drug/alcohol counselling, legal/financial services, immigration/cultural services, domestic/family violence services, other specialist services and general assistance and support.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/specialist-homelessness-services).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+shs2 <- readRDS(file.path(
+  data_dir,
+  "shs2-shs-mental-health-issue-demographic.rds"
+))
+
+# Table name: *`r shs2$table_name[1]`*. 
+# 
+# Table code: *`r shs2$table_code[1]`*. 
+# 
+# Data source: *`r shs2$source[1]`*.
+
+# clean the variable names for visualisation
+shs2$measurement <- gsub("Per cent", "Percentage",shs2$measurement)
+
+y <- shs2 %>%
+  filter(mental_health_issue == "True")
+```
+
+### By Age Group
+
+```{r}
+#| label: fig-shs-a
+#| fig-cap: Recipients of SHS by Age Group, 2020-21
+
+n_levels <- length(unique(y$client_demographics))
+rmhc_blue_pal <- colorRampPalette(c("#91BFD0", "#08306B"))(n_levels)
+
+# fig.height=10
+y %>% 
+  filter(group == "Age group") %>% 
+  ggplot(aes(x = client_demographics, y = value, fill = client_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age group",
+       y = "Value",
+       fill = "Age group")+
+  theme_bw()+
+  scale_fill_manual(values = rmhc_blue_pal)
+```
+
+### By Sex
+
+```{r}
+#| label: fig-shs-s
+#| fig-cap: Recipients of SHS by Sex, 2020-21
+
+y %>% 
+  filter(group == "Sex") %>% 
+  ggplot(aes(x = client_demographics, y = value, fill = client_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y")+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value")+
+  theme_bw()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = sex_palette2)
+```
+
+### Summary
+
+SHS recipients' rate:
+
+-   Young adults aged 15-24 constitute the highest percentage of those with current mental health issues who also receive SHS.
+
+-   A decline in SHS recipient rates is observed as age increases.
+
+-   Females significantly outnumber males in receiving these services.
+
+SHS recipients' characteristics:
+
+-   The characteristics are similar to those of the general population - age distribution is bell-shaped and 25-44.
+
+-   The number and percentage of female recipients are much higher than males.

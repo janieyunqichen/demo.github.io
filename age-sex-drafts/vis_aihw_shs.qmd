@@ -1,0 +1,79 @@
+---
+title: "Specialist homelessness services"
+subtitle: "(AIHW SHS.2)"
+author: "Janie Chen"
+format: html
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: FALSE
+  echo: TRUE
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(forcats)
+library(cowplot)
+```
+
+# By demographic characteristics
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+shs2 <- readRDS(file.path(
+  data_dir,
+  "shs2-shs-mental-health-issue-demographic.rds"
+))
+```
+
+Table name: *`r shs2$table_name[1]`*. 
+
+Table code: *`r shs2$table_code[1]`*. 
+
+Data source: *`r shs2$source[1]`*.
+
+## Clients with a current mental health issue
+
+```{r}
+y <- shs2 %>% 
+  filter(mental_health_issue == "True")
+```
+
+### Age distribution
+
+```{r, fig.height=10}
+y %>% 
+  filter(group == "Age group") %>% 
+  ggplot(aes(x = client_demographics, y = value))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age Groups",
+       y = "Value",
+       title = "Age distribution of clients with current mental health issue")
+```
+
+### Sex distribution
+
+```{r}
+y %>% 
+  filter(group == "Sex") %>% 
+  ggplot(aes(x = client_demographics, y = value))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value",
+       title = "Sex distribution of clients with current mental health issue")
+```
+
+Note: didn't analyse those clients without mental health issues, will add it on if needed.

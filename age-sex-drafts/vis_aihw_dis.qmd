@@ -1,0 +1,73 @@
+---
+title: "National Disability Insurance Scheme (NDIS)"
+subtitle: "(AIHW DIS.4)"
+author: "Janie Chen"
+format: html
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: FALSE
+  echo: TRUE
+toc: true
+toc-floating: true
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)
+```
+
+# NDIS active participants, psychosocial primary disability
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+dis4 <- readRDS(file.path(
+  data_dir,
+  "dis4-ndis-active-by-demographic.rds"
+))
+
+dis4_sa <- dis4 %>% 
+  filter(group %in% c("State_or_territory", "Age_group") )
+```
+
+Table name: *`r dis4$table_name[1]`*. 
+
+Table code: *`r dis4$table_code[1]`*. 
+
+Data source: *`r dis4$source[1]`*.
+
+## By states or territory
+
+```{r}
+dis4_sa %>% 
+  filter(group == "State_or_territory") %>% 
+  ggplot(aes(x = participant_demographics, y = value))+
+  geom_col()+
+  facet_wrap(~name,
+             scales = "free_y",
+             ncol = 1) +
+  scale_y_continuous(labels = comma) +
+  labs(x = "States or Territory",
+       y = "Value",
+       title = "NDIS by states or territory")
+```
+
+## By Age groups
+
+```{r}
+dis4_sa %>% 
+  filter(group == "Age_group") %>% 
+  ggplot(aes(x = participant_demographics, y = value))+
+  geom_col()+
+  facet_wrap(~name,
+             scales = "free_y",
+             ncol = 1) +
+  scale_y_continuous(labels = comma) +
+  labs(x = "Age groups",
+       y = "Value",
+       title = "NDIS by age groups")
+```
+

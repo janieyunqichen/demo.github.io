@@ -1,0 +1,37 @@
+# About this report
+
+This report is about the prevalence of mental disorders, breaking it down by age and gender characteristics. It analyses the characteristics of mental disorder patients and different service recipients. Data for this report have been sourced from the Australian Bureau of Statistics (ABS), the Australian Institute of Health and Welfare (AIHW), and the Report on Government Services (RoGS).
+
+In this report, the abbreviation "MD" is used to denote "mental disorder."
+
+# Definitions
+
+*Note: The phrases marked with an asterisk are explained in the Definition section.*
+
+-   **Mental illness**: a clinically diagnosable disorder that significantly interferes with an individual's cognitive, emotional or social abilities. It covers a range of illnesses including anxiety, affective and substance use disorders.
+
+-   **Any 12-month mental disorder**: persons who met criteria for diagnosis of a lifetime mental disorder (with hierarchy) and had sufficient symptoms of that disorder in the previous 12 months. A person may have more than one 12-month mental disorder.
+
+-   **Lifetime mental disorders**: the number of people who met the diagnostic criteria for having a mental disorder at some time in their life. This does not imply that a person has had a mental disorder throughout their entire life.
+
+-   **Community mental health care (CMHC)**: Community mental health care refers to government‑funded and operated specialised mental health care provided by community mental health care services and hospital‑based ambulatory care services, such as outpatient and day clinics.
+
+-   **CMHC service contacts**: CMHC service contacts can be conducted as either individual or group sessions. Service contacts can also be face-to-face, via telephone, or using other forms of direct communication such as video link. They can be conducted in the presence of the patient, with a third party (such as a carer or family member) and/or other professional or mental health worker.
+
+-   **Specialist homelessness service(s) (SHS):** Specialist homelessness service(s) is assistance provided by a specialist homelessness agency to a client aimed at responding to or preventing homelessness. The specialist homelessness services in scope for this collection include accommodation provision, assistance to sustain housing, mental health services, family/relationship assistance, disability services, drug/alcohol counselling, legal/financial services, immigration/cultural services, domestic/family violence services, other specialist services and general assistance and support.
+
+-   **Residential mental health care (RMHC)**: Residential mental health care refers to residential care provided by residential mental health services. A residential mental health service is a specialised mental health service that:
+
+    -   employs mental health trained staff on‑site
+
+    -   provides rehabilitation, treatment or extended care to residents for whom the care is intended to be on an overnight basis and in a domestic‑like environment
+
+    -   encourages the residents to take responsibility for their daily living activities.
+
+    These services include those that employ mental health trained staff on-site 24 hours per day and other services with less intensive staffing. However, all these services employ on‑site mental health trained staff for some part of the day.
+
+-   **Episodes of residential care:** Episodes of residential care are defined as a period of care between the start of residential care (either through the formal start of the residential stay or the start of a new reference period (that is, 1 July)) and the end of residential care (either through the formal end of residential care, commencement of leave intended to be greater than 7 days, or the end of the reference period (that is, 30 June)). An individual can have one or more episodes of care during the reference period.
+
+-   **Psychosocial disability:** Psychosocial disability describes a disability that comes from a mental health condition. Not everyone who has a mental health condition will have a psychosocial disability. Examples of some psychosocial disabilities include Schizophrenia and Schizoaffective disorder, Anxiety disorders, Obsessive compulsive disorder, Post-traumatic stress disorder, Agoraphobia and Social phobia or Mood disorders, such as Depression and Bipolar.
+
+-   **Primary disability**: A primary disabilityis the disability that causes the most difficulties in everyday life. Many people have multiple disabilities or other comorbid conditions that do not impair the person to the same extent as their primary disability. These are referred to as secondary disabilities.

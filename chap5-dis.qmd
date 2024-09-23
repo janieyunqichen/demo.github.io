@@ -1,0 +1,105 @@
+
+# Psychosocial Disability Support Services
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+
+**Psychosocial disability\* support services** are critical in assisting people with psychosocial disability overcome functional limitations (for example, with communication, daily living or self-care) and facilitating full and equal participation in the community.
+
+This section presents information on specialist disability support services provided under the National Disability Insurance Scheme (NDIS) to participants with a **primary disability\*** of psychosocial disability.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/psychosocial-disability-support).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+dis4 <- readRDS(file.path(
+  data_dir,
+  "dis4-ndis-active-by-demographic.rds"
+))
+
+dis4_sa <- dis4 %>% 
+  filter(group %in% c("State_or_territory", "Age_group"))
+
+# Table name: *`r dis4$table_name[1]`*. 
+# 
+# Table code: *`r dis4$table_code[1]`*. 
+# 
+# Data source: *`r dis4$source[1]`*.
+```
+
+## By States or Territory
+
+```{r}
+#| label: fig-dis-s
+#| fig-cap: NDIS Psychosocial Participants, by States or Territory, as of Dec 2021
+dis4_sa <- dis4_sa %>% 
+  filter(group == "State_or_territory")
+
+# add state levels
+state_levels <- c("NSW","Vic","Qld","WA","SA","Tas","ACT","NT")
+dis4_sa$participant_demographics <- factor(dis4_sa$participant_demographics,levels = state_levels)
+
+ggplot(dis4_sa, aes(x = participant_demographics, y = value))+
+geom_col()+
+facet_wrap(~measurement,
+           scales = "free_y",
+           ncol = 1) +
+scale_y_continuous(labels = comma) +
+labs(x = "States or Territory",
+     y = "Value")+
+theme_bw()
+
+# for analysis
+# dis4_sa_a <- dis4_sa %>% 
+#   filter(measurement == "Rate (per 100,000 population)")
+```
+
+## By Age
+
+```{r}
+#| label: fig-dis-a
+#| fig-cap: NDIS Psychosocial Participants, by Age Group, as of Dec 2021
+dis4_age <- dis4 %>% 
+  filter(group == "Age_group")
+
+n_levels <- length(unique(dis4_age$participant_demographics))
+dis_blue_pal <- colorRampPalette(c("#B3E2F2", "#08306B"))(n_levels)
+
+dis4_age %>% 
+  filter(group == "Age_group") %>% 
+  ggplot(aes(x = participant_demographics, y = value, fill = participant_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1) +
+  scale_y_continuous(labels = comma) +
+  labs(x = "Age group",
+       y = "Value",
+       fill = "Age groups")+
+  theme_bw()+
+  scale_fill_manual(values = dis_blue_pal)+
+  theme(legend.position = "none")
+
+# for analysis
+# dis4_sa_a2 <- dis4 %>% 
+#   filter(group == "Age_group",
+#          measurement == "Rate (per 100,000 population)")
+```
+
+## Summary
+
+-   Vic and ACT have the highest rates, with approximately 250 per 100,000. Other states and territories show similar, lower rates, ranging from 170 to 190 per 100,000.
+
+-   The rate, number, and percentage of active patients all display a similar trend across age groups, increasing progressively with age but experiencing a decline after age 65+.

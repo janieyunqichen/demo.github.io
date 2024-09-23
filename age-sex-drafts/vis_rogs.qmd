@@ -1,0 +1,186 @@
+---
+title: "Productivity Commission Report on Government Services 2023"
+subtitle: "(ROGS 13A.45 and 46)"
+author: "Janie Chen"
+format: html
+editor_options: 
+  chunk_output_type: inline
+execute:
+  warning: FALSE
+  echo: TRUE
+---
+
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(tidyverse)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+```
+# Tab 45
+
+‘Prevalence of mental illness’ is defined as the proportion of the total population who have a mental illness.
+
+A low or decreasing prevalence of mental illness can indicate that measures to prevent mental illness have been effective.
+
+Due to COVID-related difficulties with in-person data collection during 2021, the National Study of Mental Health and Wellbeing (NSMHW) was conducted in two parts from 2020 to 2022. As a result, only national totals are available for reporting in 2023. *These data should not be compared to the 2007 survey due to a smaller sample size in 2020-2021*. State and territory data are expected to be available for the 2024 Report.
+
+```{r}
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs45 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-sex.rds"
+)) %>% 
+  select(-c(Data_Source, Description6))
+```
+
+```{r}
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs46 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-age.rds"
+)) %>% 
+  select(-c(Data_Source, Description4))
+```
+
+# Prevalence of mental illness for all population by sex and age for 2020-21 and 2007
+
+## Disorder Timeframe by Sex
+
+```{r}
+# Data wrangling 
+tab <- rogs45 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3,
+    specific_disorder = Description4)
+
+tab$disorder_timeframe <- str_replace_all(tab$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+# plot
+disorder_timeframe <- tab %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+ggplot(disorder_timeframe, aes(x = disorder_timeframe, y = Aust, fill = Sex))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year,ncol=1)+
+  coord_flip()+
+  labs(title = "Disorder timeframe by sex for 2020-21 and 2007",
+       x = "Disorder timeframe",
+       y = "Percentage for all population")+
+  theme_bw()
+```
+
+## Disorder Timeframe by Age
+
+```{r}
+# Data wrangling 
+tab_46 <- rogs46 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3)
+
+tab_46$disorder_timeframe <- str_replace_all(tab_46$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+tab_46$Age <- gsub(" years old","",tab_46$Age)
+
+# plot
+disorder_timeframe_46 <- tab_46 %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+ggplot(disorder_timeframe_46, aes(x = Age, y = Aust, fill = Year))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~disorder_timeframe)+
+  scale_fill_manual(values = c("#0C356A","#279EFF"))+
+  coord_flip()+
+  labs(title = "Disorder timeframe by age for 2020-21 and 2007",
+       y = "Percentage for all population")+
+  theme_bw()+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Disorder Group by Sex
+
+```{r}
+disorder_group <- tab %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+
+disorder_group_ttl <- disorder_group %>%
+  filter(specific_disorder=="") 
+disorder_group_ttl$disorder_group <- gsub("Any ","",disorder_group_ttl$disorder_group)
+disorder_group_ttl$disorder_group <- tools::toTitleCase(disorder_group_ttl$disorder_group)
+
+ggplot(disorder_group_ttl, aes(x = disorder_group, y = Aust, fill = Sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(.~Year, ncol = 1)+
+  coord_flip()+
+  labs(title = "Disorder group by sex for 2020-21 and 2007",
+       x = "Disorder Group",
+       y = "Percentage for all population")+
+  theme_bw()
+```
+
+
+## Disorder Group by Age
+
+```{r}
+disorder_group_46 <- tab_46 %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+
+ggplot(disorder_group_46, aes(x = Age, y = Aust, fill = Year))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~disorder_group)+
+  scale_fill_manual(values = c("#0C356A","#279EFF", "#40F8FF"))+
+  coord_flip()+
+  labs(title = "Disorder group by age for 2020-21 and 2007",
+       y = "Percentage of all population")+
+  theme_bw()+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Specific Disorder Types Distribution 
+
+```{r}
+specific_disorder_tab <- disorder_group %>% 
+  filter(specific_disorder!="") %>% 
+  pivot_wider(names_from = c(Sex,Year),
+              values_from = Aust)
+
+specific_disorder_tab %>% 
+  select(-disorder_group) %>% 
+  kable(format = "html",
+        col.names = c("Specific Disorder",rep(c("Male(%)","Female(%)","All(%)"),2)),
+        caption = "Specific disorder types by sex for 2020-21 and 2007",
+      ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>% 
+  kable_classic(full_width = F, html_font = "Cambria") %>% 
+  add_header_above(c(" "=1, "2020-21"=3, "2007"=3), bold = TRUE) %>% 
+  column_spec(c(1,4), extra_css = "border-right: 2px solid grey;") %>% 
+  row_spec(0, bold = TRUE) %>% 
+  pack_rows("Anxiety disorders",1,6) %>% 
+  pack_rows("Affective Disorders",7,9) %>% 
+  pack_rows("Substance use disorders",10,12) %>% 
+  column_spec(c(2,5), color = "#2196F3") %>% 
+  column_spec(c(3,6), color = "#F44336")
+```
+

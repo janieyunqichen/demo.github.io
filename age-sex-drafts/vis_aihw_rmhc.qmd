@@ -1,0 +1,274 @@
+---
+title: "Residential mental health care services"
+subtitle: "(AIHW RMHC.3,4,6,7)"
+author: "Janie Chen"
+format: html
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: FALSE
+  echo: TRUE
+toc: true
+toc-floating: true
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)
+```
+
+# Demographic of people accessing residential mental health care
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc3 <- readRDS(file.path(
+  data_dir,
+  "rmhc3-ppl-accessing-rmhc.rds"
+))
+```
+
+Table name: *`r rmhc3$table_name[1]`*. 
+
+Table code: *`r rmhc3$table_code[1]`*. 
+
+Data source: *`r rmhc3$source[1]`*.
+
+
+## Age distribution
+
+```{r}
+rmhc3 %>% 
+  filter(demographic == "Age_group") %>% 
+  ggplot(aes(x = demographic_variable, y = value))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age Groups",
+       y = "Value",
+       title = "Age distribution of people accessing residential mental health care")
+```
+
+## Sex distribution
+
+```{r}
+rmhc3 %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = demographic_variable, y = value))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 3)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value",
+       title = "Sex distribution of people accessing residential mental health care")
+```
+
+# The rate of residential mental health care episodes
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc4 <- readRDS(file.path(
+  data_dir,
+  "rmhc4-rmhc-by-sex-age-states.rds"
+))
+```
+
+Table name: *`r rmhc4$table_name[1]`*. 
+
+Table code: *`r rmhc4$table_code[1]`*. 
+
+Data source: *`r rmhc4$source[1]`*.
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc7 <- readRDS(file.path(
+  data_dir,
+  "rmhc7-rmhc-ts-by-age-sex.rds"
+))
+
+rmhc7_rsa <- rmhc7 %>% 
+  filter(count == "Rate_per_10_000_population",
+         demographic %in% c("Sex", "Age_group"))
+rmhc7_rsa$year <- gsub("–\\d{2}", "", rmhc7_rsa$year)
+rmhc7_rsa$year <- as.numeric(rmhc7_rsa$year)
+```
+
+Table name: *`r rmhc7$table_name[1]`*. 
+
+Table code: *`r rmhc7$table_code[1]`*. 
+
+Data source: *`r rmhc7$source[1]`*.
+
+
+## By sex and age
+
+```{r}
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+rmhc4 %>% 
+  filter(count != "Number",
+         states_and_territories == "Total") %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age groups",
+       y = "Rate (per 10,000 population)",
+       title = "Total episodes rate by age and sex")
+```
+
+
+## By sex, states and territories
+
+```{r}
+rmhc4 %>% 
+  filter(count != "Number",
+         states_and_territories != "Total",
+         age_group != "Total") %>% 
+  ggplot(aes(x = states_and_territories, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "States and territories",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes rate by states and territories")
+```
+
+
+## By sex, age, states and territories
+
+```{r}
+rmhc4 %>% 
+  filter(count != "Number",
+         age_group != "Total",
+         states_and_territories != "Total") %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(~states_and_territories,
+             ncol = 2)+
+  labs(x = "Age group",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes rate by sex, age, states and territories")
+```
+
+
+## Changes over the year by age group
+
+```{r}
+rmhc7_rsa %>% 
+  filter(demographic == "Age_group") %>% 
+  ggplot(aes(x = year, y = value)) +
+  geom_line()+
+  facet_wrap(~demographic_variable)+
+  labs(x = "Year",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes rate changes by age over year 2005–06 to 2020–21")
+```
+
+## Changes over the year by sex
+
+```{r}
+rmhc7_rsa %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = year, y = value)) +
+  geom_line()+
+  facet_wrap(~demographic_variable)+
+  labs(x = "Year",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes rate changes by sex over year 2005–06 to 2020–21")
+```
+
+
+Note: didn't analyse episodes *numbers*, will add it on if needed.
+
+# Residential mental health care episodes per 10,000 population
+
+## Load data
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc6 <- readRDS(file.path(
+  data_dir,
+  "rmhc6-rmhc-per-10000-pop-by-sex-n-age.rds"
+))
+
+rmhc6$year <- gsub("–\\d{2}", "", rmhc6$year)
+rmhc6$year <- as.numeric(rmhc6$year)
+```
+
+Table name: *`r rmhc6$table_name[1]`*. 
+
+Table code: *`r rmhc6$table_code[1]`*. 
+
+Data source: *`r rmhc6$source[1]`*.
+
+## Average Annual Change
+
+```{r}
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+ap <- rmhc6 %>% 
+  group_by(age_group,sex) %>% 
+  summarise(avg = mean(average_annual_change_per_cent_2016_17_to_2020_21))
+
+
+a_hline <- ap %>% filter(age_group == "Total", sex == "All_persons") %>% pull(avg)
+f_hline <- ap %>% filter(age_group == "Total", sex == "Females") %>% pull(avg)
+m_hline <- ap %>% filter(age_group == "Total", sex == "Males") %>% pull(avg)
+
+ggplot(ap, 
+       aes(x = age_group,
+           y = avg,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age groups",
+       y = "Average annual change (per cent)",
+       title = "Average Annual Change Percent by Sex and Age group, 2016–17 to 2020–21")+
+  geom_hline(yintercept = a_hline, linetype = "dashed", color = "#4CAF50")+
+  geom_hline(yintercept = f_hline, linetype = "dashed", color = "#F44336")+
+  geom_hline(yintercept = m_hline, linetype = "dashed", color = "#2196F3")+
+  geom_text(aes(x = "85+", y = a_hline, label = "avg. All persons"), hjust = 0.8, vjust = -0.5, size = 3, color = "#4CAF50") +
+  geom_text(aes(x = "85+", y = f_hline, label = "avg. Females"), hjust = 0.8, vjust = -0.5, size = 3, color = "#F44336") +
+  geom_text(aes(x = "85+", y = m_hline, label = "avg. Males"), hjust = 0.8, vjust = -0.5, size = 3, color = "#2196F3")
+  
+```
+
+
+## Changes Over Time by Age Group 
+
+### Male mental health care episodes changes over the year
+
+```{r}
+mts <- rmhc6 %>% 
+  filter(sex == "Males")
+
+ggplot(mts, aes(x = year, y = episodes_per_10_000_pop)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Episodes (per 10,000 population)",
+       title = "Male Episodes Change by Age Groups")
+```
+
+### Female mental health care episodes changes over the year
+
+```{r}
+fts <- rmhc6 %>% 
+  filter(sex == "Females")
+
+ggplot(fts, aes(x = year, y = episodes_per_10_000_pop)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Episodes (per 10,000 population)",
+       title = "Female Episodes Change by Age Groupss")
+```
+

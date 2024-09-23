@@ -1,0 +1,248 @@
+---
+title: "(ABS) Persons 16–85 years, 12-month mental disorders by age and sex"
+author: "Janie Chen"
+format: html
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+```
+
+
+## Load data
+
+
+```{r}
+abs3_data_dir <- file.path(here::here(), "data", "ABS")
+abs3 <- readRDS(file.path(
+  abs3_data_dir,
+  "abs-12-month-mental-disorders-by-age-and-sex.rds"
+))
+```
+
+
+Table name is *`r abs3$table_name[1]`*. 
+Table code is *`r abs3$table_code[1]`*. 
+Data source is *`r abs3$source[1]`*.
+
+# Population
+
+## Global view of the population by age
+
+### Bigger age gap groups
+
+
+```{r}
+ttl_pop1 <- abs3 %>% 
+  filter(age_group_type == "type1",
+         sex == "Persons",
+         name == "Estimates")
+
+ggplot(ttl_pop1, aes(x = disorder_types, 
+                     y = value, 
+                     fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Estimate Population of Mental Disorder by Age",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age groups")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+### Smaller age gap groups
+
+
+```{r}
+ttl_pop2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Estimates")
+
+ggplot(ttl_pop2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Estimate Population of Mental Disorder by Age",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age groups")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Global view of the population by sex
+
+
+```{r}
+ttl_pop_sex1 <- abs3 %>% 
+  filter(sex != "Persons",
+         name == "Estimates")
+
+ggplot(ttl_pop_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Estimate Population of Mental Disorder by Sex",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Population by age and sex
+
+### Bigger age gap groups
+
+
+```{r}
+# Plots for bigger age groups
+big_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type1",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(big_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Estimate Population of Mental Disorder by Age and Sex",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+### Smaller age gap groups
+
+
+```{r}
+# Plots for smaller age groups
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Estimate Population of Mental Disorder by Age and Sex",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group)+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+# Proportion
+
+## Global view of the proportion by age
+
+### Bigger age gap groups
+
+
+```{r}
+ttl_pro1 <- abs3 %>% 
+  filter(age_group_type == "type1",
+         sex == "Persons",
+         name == "Proportions")
+
+ggplot(ttl_pro1, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Proportion of Mental Disorder by Age",
+       x = "Disorder types",
+       y = "Proportion(%)",
+       fill = "Age groups")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+### Smaller age gap groups
+
+
+```{r}
+ttl_pro2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Proportions")
+
+ggplot(ttl_pro2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Proportion of Mental Disorder by Age",
+       x = "Disorder types",
+       y = "Proportion(%)",
+       fill = "Age groups")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Global view of the proportion by sex
+
+
+```{r}
+ttl_pro_sex1 <- abs3 %>% 
+  filter(sex != "Persons",
+         name == "Proportions")
+
+ggplot(ttl_pro_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Proportion of Mental Disorder by Sex",
+       x = "Disorder types",
+       y = "Proportion(%)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+## Proportion by age and sex
+
+### Bigger age gap groups
+
+
+```{r}
+# Plots for bigger age groups
+big_pro_sex <- abs3 %>% 
+  filter(age_group_type == "type1",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(big_pro_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Proportion of Mental Disorder by Age and Sex",
+       x = "Disorder types",
+       y = "Proportion(%)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+### Smaller age gap groups
+
+
+```{r}
+# Plots for smaller age groups
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Proportion of Mental Disorder by Age and Sex",
+       x = "Disorder types",
+       y = "Proportion(%)",
+       fill = "Sex")+
+  facet_wrap(~age_group)+
+  guides(fill = guide_legend(reverse=TRUE))
+```

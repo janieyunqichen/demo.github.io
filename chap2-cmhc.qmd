@@ -1,0 +1,305 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Community Mental Health Care (CMHC) Service
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+```{r}
+#CMHC data
+
+data_dir <- file.path(here::here(), "data", "AIHW")
+aihw9 <- readRDS(file.path(
+  data_dir,
+  "patients-by-demographic-states.rds"
+))
+
+# clean the variable names for visualisation
+aihw9$count <- gsub("Per_cent", "Percentage",aihw9$count)
+aihw9$count <- gsub("Rate_per_1000_population", "Rate (per 1,000 population)",aihw9$count)
+
+aihw9_age_df <- aihw9 %>% 
+  filter(demographic == "Age group")
+
+aihw9_age_df$demographic_variable <- gsub(" years","",aihw9_age_df$demographic_variable)
+aihw9_age_df$demographic_variable <- gsub(" and over","+",aihw9_age_df$demographic_variable)
+
+# factors for plot
+aihw9_age_df$demographic_variable <- factor(aihw9_age_df$demographic_variable, levels = c("0-4","5-11","12-17","18-24","25-34","35-44","45-54","55-64","65-74","75-84","85+"))
+
+
+# Table name: *`r aihw9$table_name[1]`*. 
+# Table code: *`r aihw9$table_code[1]`*. 
+# Data source: *`r aihw9$source[1]`*.
+```
+
+## About the Data
+
+Mental illness is often treated in community and hospital-based outpatient care services provided by state and territory governments. Collectively, these services are referred to as **community mental health care (CMHC)** services.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/community-services#data).
+
+## CMHC Patients
+
+### By Age Group
+
+```{r}
+#| label: fig-cmhc-a
+#| fig-cap: CMHC Patients by Age Group, 2020-21
+
+# manual blue pal
+n_levels <- length(unique(aihw9_age_df$demographic_variable))
+blue_pal <- colorRampPalette(c("#91BFD0", "#08306B"))(n_levels)
+color_mapping <- setNames(blue_pal, unique(aihw9_age_df$demographic_variable))
+
+ggplot(aihw9_age_df %>% filter(states_and_territories == "Total"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  labs(x = "Measurement",
+       y = "Value",
+       fill = "Age group") + 
+  facet_wrap(~count, scales = "free",ncol = 1)+
+  scale_fill_manual(values = color_mapping)
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### By Age Group and States or Territories
+
+```{r}
+#| label: fig-cmhc-asn
+#| fig-cap: Number of CMHC Patients by Age Group and States or Territories, 2020–21
+ggplot(aihw9_age_df %>% filter(count == "Number"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Number",
+       fill = "Age group") +
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+```{r}
+#| label: fig-cmhc-asp
+#| fig-cap: Percentage of CMHC Patients by Age Group and States or Territories, 2020–21
+ggplot(aihw9_age_df %>% filter(count == "Percentage"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw() +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Percentage",
+       fill = "Age group")+
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)+
+  guides(fill = guide_legend(reverse=TRUE))
+```
+
+
+```{r}
+#| label: fig-cmhc-asr
+#| fig-cap: Rate (Per 1,000 Population) of CMHC Patients by Age Group and States or Territories, 2020–21
+ggplot(aihw9_age_df %>% filter(count == "Rate (per 1,000 population)"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw() +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Percentage",
+       title = "Percentage",
+       fill = "Age group") +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Rate (per 1,000 population)")+
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)+
+  guides(fill = guide_legend(reverse=TRUE))
+  
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### By Sex
+
+```{r}
+#| label: fig-cmhc-s
+#| fig-cap: CMHC Patients by Sex, 2020-21
+
+ggplot(aihw9 %>% filter(demographic == "Sex", states_and_territories == "Total"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  theme(legend.position = "none")+
+  labs(x = "Sex",
+       y = "Value",
+       fill = "Sex") + 
+  facet_wrap(~count, scales = "free",nrow = 1)+
+  scale_fill_manual(values = sex_palette2)
+```
+
+### By Sex and States or Territories
+
+```{r}
+#| label: fig-cmhc-ss
+#| fig-cap: The Value Difference of Female and Male CMHC Patients, 2020–21
+
+aihw9_sex_df <- aihw9 %>% 
+  filter(demographic == "Sex") %>% 
+  pivot_wider(names_from = demographic_variable, values_from = value) %>% 
+  mutate(f_m_diff = Female -  Male,
+         tf = case_when(f_m_diff >=0 ~ "T",
+                        .default = "F")) 
+
+ggplot(aihw9_sex_df, aes(x = states_and_territories, y = f_m_diff, fill = tf)) +
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(~count, scales = "free")+
+  theme_bw()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = c("#2196F3","#F44336"))+
+  labs(x = "States or Territories",
+       y = "Value Difference (Female - Male)")
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### Summary
+
+Patients rate:
+
+-   Teenagers aged 12-17 have the highest patient rates across all age groups.
+
+-   Patient rates generally decrease with age but show an uptick for individuals over 75, especially in WA and Tas.
+
+-   Vic has the lowest overall patient rate and shows minimal variation across age groups.
+
+-   Females have higher patient rates than males, with exceptions in NT and significant trends observed in WA, ACT, and Tas.
+
+Patient characteristics:
+
+-   The age distribution of patients exhibits a bell-shaped, right-skewed curve, with the peak in the 25-34 age group.
+
+-   Significantly higher percentages and numbers of patients are aged 12-17 in NSW, Qld, WA, SA, and Tas.
+
+-   Except in NT, female patients outnumber male patients across all states. The highest numbers of female patients are found in NSW and WA, and the percentage of female patients is especially high in WA, Tas, and ACT.
+
+## CMHC Contacts
+
+CMHC service contacts can be conducted as either individual or group sessions. Service contacts can also be face-to-face, via telephone, or using other forms of direct communication such as video link. They can be conducted in the presence of the patient, with a third party (such as a carer or family member) and/or other professional or mental health worker.
+
+```{r}
+## Load data
+
+data_dir <- file.path(here::here(), "data", "AIHW")
+
+aihw10 <- readRDS(file.path(
+  data_dir,
+  "contacts-per1000-sex-age.rds"
+))
+
+aihw10$year <- gsub("–\\d{2}", "", aihw10$year)
+aihw10$year <- as.numeric(aihw10$year)
+
+# Table name: *`r aihw10$table_name[1]`*.
+# 
+# Table code: *`r aihw10$table_code[1]`*.
+# 
+# Data source: *`r aihw10$source[1]`*.
+```
+
+### Average Annual Change by Sex and Age
+
+```{r}
+#| label: fig-cmhc-csa
+#| fig-cap: Avg. Annual Contact Change by Sex and Age, 2016–17 to 2020–21
+
+ggplot(aihw10, 
+       aes(x = age_group,
+           y = average_annual_change_per_cent_2016_17_to_2020_21,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Average annual change (%)",
+       fill = "Sex")+
+  theme_bw()
+  
+```
+
+### Changes Over Time by Age Aroup
+
+#### Male Patients
+
+```{r}
+#| label: fig-cmhc-cam
+#| fig-cap: Male Contact Rate Trends by Age Group, 2005-2020
+
+mts <- aihw10 %>% 
+  filter(sex == "Males")
+
+ggplot(mts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line(color = "#2196F3")+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)")+
+  scale_y_continuous(breaks = c(0, 300, 600, 900))+
+  theme_bw()
+```
+
+#### Female Patients
+
+```{r}
+#| label: fig-cmhc-caf
+#| fig-cap: Female Contact Rate Trends by Age Group, 2005-2020
+fts <- aihw10 %>% 
+  filter(sex == "Females")
+
+ggplot(fts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line(color = "#F44336")+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)")+
+  theme_bw()
+```
+
+### Summary
+
+5-year change over 2016-2020:
+
+-   Contacts rate for children aged 0-11 significantly declined for both sex.
+
+-   A notable increase in contacts among young individuals aged 12-24, with females showing a particularly strong uptick.
+
+-   Middle-aged and elderly individuals (45-74) showed an upward trend in contacts rate, with males contributing significantly to this increase.
+
+15-year change over 2005-2020:
+
+-   Between 2005 and 2020, there was a modest increase in contact rates for both males and females.
+
+-   Males aged 12-54 had the highest contact rates among all age groups, and it also shows an increasing trend in the 15 years.
+
+-   Contact rates for young females (aged 12-24) roughly tripled during the 15 years, while rates for other age groups remained stable.

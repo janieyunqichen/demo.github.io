@@ -1,0 +1,58 @@
+format:
+  #https://quarto.org/docs/reference/formats/pdf.html
+  titlepage-pdf:
+      # The "report" class is more suitable for us than book or article. See:
+      # https://tex.stackexchange.com/questions/36988/regarding-the-book-report-and-article-document-classes-what-are-the-mai
+      # Also the report equivalent in KOMA-script (scrreport) has more flexibility than the original report class. See:
+      # https://ctan.org/pkg/koma-script
+      # https://mirror.cse.unsw.edu.au/pub/CTAN/macros/latex/contrib/koma-script/doc/scrguide-en.pdf
+    documentclass: scrreport
+    #classoption: []
+    toc: true
+    number-sections: true
+    colorlinks: false
+    papersize: A4
+    margin-left: "2.54 cm"
+    margin-right: "2.54 cm"
+    margin-top: "2.54 cm"
+    margin-bottom: "2.54 cm"
+    mainfont: ClearSans
+
+    # ---- title page----
+    # See:
+    # https://nmfs-opensci.github.io/quarto_titlepages/03-titlepage-themes.html
+    # for choice of different styles, and tags that can be overridden below
+    titlepage: bg-image
+    titlepage-footer: |
+      [https://www.healthpolicy.com.au](https://www.healthpolicy.com.au)\
+    titlepage-geometry: ["top=3in", "bottom=1.5in", "right=1in", "left=1in"]
+    titlepage-theme:
+      #page-color: "white"   # this does not change all the elements to white
+      logo-space-after: "8\\baselineskip"
+      title-fontstyle: ["bfseries"]
+      title-fontsize: 30  # fontsize doesn't work without fontstyle
+      title-color: "white"
+      subtitle-fontstyle: ["bfseries"]
+      subtitle-fontsize: 18
+      subtitle-color: "white"
+      author-fontstyle: ["bfseries"]
+      author-fontsize: 18
+      author-color: "white"
+      # header-fontstyle: ["bfseries"]
+      # header-fontsize: 16
+      # header-color: "white"
+      # header-space-after: "0.5cm"
+      #header-align: "right"
+      date-fontstyle: ["bfseries"]
+      date-fontsize: 14
+      date-color: "white"
+      # date-align: "right"   # for the date element, this only indents it, doesn't make it right justified
+      footer-fontstyle: ["bfseries"]
+      footer-fontsize: 12
+      footer-color: "white"
+      # the header element could be useful for adding  DRAFT/FINAL report to the titlepage, except that I cannot change the colour to white
+      # to use it, add this line under titlepage-pdf in _quarto.yml:    titlepage-header: "DRAFT report"
+#      elements: ["\\logoblock", "\\vfill", "\\titleblock", "\\authorblock", "\\vfill",  "\\headerblock", "\\dateblock",  "\\vfill", "\\footerblock"]
+      elements: ["\\logoblock", "\\vfill", "\\titleblock", "\\authorblock", "\\vfill",  "\\dateblock",  "\\vfill", "\\footerblock"]
+      vrule-width: "0pt"
+      bg-image-size: "1\\paperwidth"

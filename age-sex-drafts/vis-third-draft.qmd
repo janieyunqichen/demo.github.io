@@ -1,0 +1,1246 @@
+---
+title: "Prevalence of Mental Disorder by Age and Gender"
+author: "Janie Chen"
+format:
+  html:
+    code-fold: true
+editor_options: 
+  chunk_output_type: inline
+execute:
+  warning: FALSE
+  echo: TRUE
+toc: true
+toc-floating: true
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(scales)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(kableExtra)
+
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+sex_palette2 <- c("#F44336","#2196F3")
+```
+
+# About this report
+
+This report is about the prevalence of mental disorders, breaking it down by age and gender characteristics. It analyses the characteristics of mental disorder patients and different service recipients. Data for this report have been sourced from the Australian Bureau of Statistics (ABS), the Australian Institute of Health and Welfare (AIHW), and the Report on Government Services (RoGS).
+
+In this report, the abbreviation "MD" is used to denote "mental disorder."
+
+# Definitions
+
+*Note: The phrases marked with an asterisk are explained in the Definition section.*
+
+-   **Mental illness**: a clinically diagnosable disorder that significantly interferes with an individual's cognitive, emotional or social abilities. It covers a range of illnesses including anxiety, affective and substance use disorders.
+
+-   **Any 12-month mental disorder**: persons who met criteria for diagnosis of a lifetime mental disorder (with hierarchy) and had sufficient symptoms of that disorder in the previous 12 months. A person may have more than one 12-month mental disorder.
+
+-   **Lifetime mental disorders**: the number of people who met the diagnostic criteria for having a mental disorder at some time in their life. This does not imply that a person has had a mental disorder throughout their entire life.
+
+-   **Community mental health care (CMHC)**: Community mental health care refers to government‑funded and operated specialised mental health care provided by community mental health care services and hospital‑based ambulatory care services, such as outpatient and day clinics.
+
+-   **CMHC service contacts**: CMHC service contacts can be conducted as either individual or group sessions. Service contacts can also be face-to-face, via telephone, or using other forms of direct communication such as video link. They can be conducted in the presence of the patient, with a third party (such as a carer or family member) and/or other professional or mental health worker.
+
+-   **Specialist homelessness service(s) (SHS):** Specialist homelessness service(s) is assistance provided by a specialist homelessness agency to a client aimed at responding to or preventing homelessness. The specialist homelessness services in scope for this collection include accommodation provision, assistance to sustain housing, mental health services, family/relationship assistance, disability services, drug/alcohol counselling, legal/financial services, immigration/cultural services, domestic/family violence services, other specialist services and general assistance and support.
+
+-   **Residential mental health care (RMHC)**: Residential mental health care refers to residential care provided by residential mental health services. A residential mental health service is a specialised mental health service that:
+
+    -   employs mental health trained staff on‑site
+
+    -   provides rehabilitation, treatment or extended care to residents for whom the care is intended to be on an overnight basis and in a domestic‑like environment
+
+    -   encourages the residents to take responsibility for their daily living activities.
+
+    These services include those that employ mental health trained staff on-site 24 hours per day and other services with less intensive staffing. However, all these services employ on‑site mental health trained staff for some part of the day.
+
+-   **Episodes of residential care:** Episodes of residential care are defined as a period of care between the start of residential care (either through the formal start of the residential stay or the start of a new reference period (that is, 1 July)) and the end of residential care (either through the formal end of residential care, commencement of leave intended to be greater than 7 days, or the end of the reference period (that is, 30 June)). An individual can have one or more episodes of care during the reference period.
+
+-   **Psychosocial disability:** Psychosocial disability describes a disability that comes from a mental health condition. Not everyone who has a mental health condition will have a psychosocial disability. Examples of some psychosocial disabilities include Schizophrenia and Schizoaffective disorder, Anxiety disorders, Obsessive compulsive disorder, Post-traumatic stress disorder, Agoraphobia and Social phobia or Mood disorders, such as Depression and Bipolar.
+
+-   **Primary disability**: A primary disabilityis the disability that causes the most difficulties in everyday life. Many people have multiple disabilities or other comorbid conditions that do not impair the person to the same extent as their primary disability. These are referred to as secondary disabilities.
+
+# Prevalence of mental disorders among adults
+
+## About the data
+
+The 2020-21 National Study of Mental Health and Wellbeing (NSMHW) measures the prevalence of mental disorders among Australians aged 16-85 years using the World Health Organization Composite International Diagnostic Interview.
+
+Respondents were asked about their experiences and symptoms of mental ill-health throughout their lifetime, from which two key measures are analysed:
+
+-   **lifetime mental disorders**, which refers to the number of people who met the diagnostic criteria for having a mental disorder at some time in their life. This does not imply that a person has had a mental disorder throughout their entire life
+
+-   **12-month mental disorders**, which refers to the number of people who met the diagnostic criteria for having a mental disorder at some time in their life and had sufficient symptoms of that disorder in the 12 months prior to the survey.
+
+Three groups of mental disorders are assessed---Anxiety, Affective and Substance Use disorders---based on definitions and criteria of the World Health Organization International Classification of Diseases, Tenth Revision.
+
+The data used for this section came from two sources:
+
+1.  [Report on Government Services 2023](https://www.pc.gov.au/ongoing/report-on-government-services/2023/health/services-for-mental-health)
+
+2.  [National Study of Mental Health and Wellbeing](https://www.abs.gov.au/statistics/health/mental-health/national-study-mental-health-and-wellbeing/latest-release#prevalence-of-mental-disorders)
+
+*Note: Due to COVID-related difficulties with in-person data collection during 2021, the National Study of Mental Health and Wellbeing (NSMHW) was conducted in two parts from 2020 to 2022. As a result, only national totals are available for reporting in 2023. These data **should not be compared to the 2007 survey** due to a smaller sample size in 2020-2021. (State and territory data are expected to be available for the 2024 Report.)*
+
+```{r}
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs45 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-sex.rds"
+)) %>% 
+  select(-c(Data_Source, Description6))
+
+data_dir <- file.path(here::here(), "data", "ROGS")
+rogs46 <- readRDS(file.path(
+  data_dir,
+  "prevalence-among-adults-by-age.rds"
+)) %>% 
+  select(-c(Data_Source, Description4))
+```
+
+```{r}
+# load the data
+abs3_data_dir <- file.path(here::here(), "data", "ABS")
+abs3 <- readRDS(file.path(
+  abs3_data_dir,
+  "abs-12-month-mental-disorders-by-age-and-sex.rds"
+))
+
+# remove some words for visualization
+abs3$disorder_types <- gsub(" mental disorder"," MD",abs3$disorder_types)
+abs3$disorder_types <- gsub(" disorders","",abs3$disorder_types)
+
+# factors for plot
+abs3$disorder_types <- factor(abs3$disorder_types, levels = c("No 12-month MD", "Any 12-month MD", "Anxiety", "Affective","Substance Use"))
+
+# change name for "bigger age gap" group
+abs3_type1 <- abs3 %>% 
+  filter(age_group_type == "type1") %>% 
+  mutate(age_group = case_when(
+    age_group == "16-34" ~ "Young (16-34)",
+    age_group == "35-64" ~ "Middle-Aged (35-64)",
+    age_group == "65-85" ~ "Older (65-85)"
+  ))
+
+abs3_type1$age_group <- factor(abs3_type1$age_group, levels = c("Young (16-34)", "Middle-Aged (35-64)","Older (65-85)"))
+
+
+#Table name is *`r abs3$table_name[1]`*.
+#Table code is *`r abs3$table_code[1]`*.
+#Data source is *`r abs3$source[1]`*.
+```
+
+## Mental Health Status
+
+### By Sex
+
+```{r}
+# Data wrangling 
+tab <- rogs45 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3,
+    specific_disorder = Description4)
+
+tab$disorder_timeframe <- str_replace_all(tab$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+# plot
+disorder_timeframe <- tab %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+highlight <- disorder_timeframe$disorder_timeframe == "Any 12-month mental disorder"
+
+ggplot(disorder_timeframe, aes(x = Sex, y = Aust, fill = disorder_timeframe))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year,ncol=1)+
+  #coord_flip()+
+  labs(title = "Mental Health Status by Sex, 2007 and 2020-21",
+       x = "Status",
+       y = "Percentage of all population (%)")+
+  theme_bw()+
+  scale_fill_manual(values = c( "#FF6969","#BB2525","#141E46"),
+                    name = "Status")
+  # theme(axis.text.y = element_text(
+  #   color = ifelse(highlight, "#BB2525", "black"),
+  #   face = ifelse(highlight, "bold", "plain")
+  # ))
+```
+
+*Note: 2007 and 2020-21 data are **not comparable** due to the difference in sample size.*
+
+### By Age Group
+
+```{r}
+# Data wrangling 
+tab_46 <- rogs46 %>% 
+  mutate(Aust = as.numeric(Aust)) %>% 
+  filter(Uncertainty == "") %>% 
+  select(-c(Uncertainty,Unit)) %>% 
+  rename(disorder_timeframe = Description2,
+    disorder_group = Description3)
+
+tab_46$disorder_timeframe <- str_replace_all(tab_46$disorder_timeframe, 
+                                            "Lifetime mental disorder; with no 12-month symptoms", 
+                                            "Lifetime mental disorder;\nwith no 12-month symptoms")
+
+tab_46$Age <- gsub(" years old","",tab_46$Age)
+
+# plot
+disorder_timeframe_46 <- tab_46 %>% 
+  filter(disorder_group == "" | str_detect(disorder_group, "Total"))
+
+ggplot(disorder_timeframe_46, aes(x = Age, y = Aust, fill = disorder_timeframe))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year,
+             ncol = 1)+
+  scale_fill_manual(values = c( "#FF6969","#BB2525","#141E46"),
+                    name = "Status")+
+  labs(title = "Mental Health Status by Age Group, 2007 and 2020-21",
+       y = "Percentage of all population (%)",
+       x = "Age group")+
+  theme_bw()
+```
+
+*Note: 2007 and 2020-21 data are **not comparable** due to the difference in sample size.*
+
+### Summary
+
+-   In both 2007 and 2020-21, a higher proportion of females reported experiencing symptoms of mental disorders in the 12 months leading up to the survey. In contrast, a more significant percentage of males reported lifetime mental disorders but did not exhibit symptoms in the 12 months prior to the survey.
+
+-   In 2020-21, nearly 40% of individuals aged 16-24 reported experiencing mental disorders in the 12 months prior to the survey. This prevalence declined with increasing age.
+
+-   For those aged 25-74, between 20% and 30% reported having lifetime mental disorders without symptoms in the past 12 months. For the age groups 16-24 and 75-85, the figures stood at approximately 10% and 15%, respectively.
+
+## 12-Month Mental Disorder Categories
+
+### By Sex
+
+```{r}
+disorder_group <- tab %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+
+disorder_group_ttl <- disorder_group %>%
+  filter(specific_disorder=="") 
+disorder_group_ttl$disorder_group <- gsub("Any ","",disorder_group_ttl$disorder_group)
+disorder_group_ttl$disorder_group <- tools::toTitleCase(disorder_group_ttl$disorder_group)
+
+ggplot(disorder_group_ttl, aes(x = disorder_group, y = Aust, fill = Sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(.~Year, ncol = 1)+
+  #coord_flip()+
+  labs(title = "Disorder Categories by Sex, 2007 and 2020-21",
+       x = "Disorder types",
+       y = "Percentage of all population (%)")+
+  theme_bw()
+```
+
+### By Age Group
+
+```{r}
+disorder_group_46 <- tab_46 %>% 
+  filter(disorder_timeframe == "Any 12-month mental disorder",
+         !str_detect(disorder_group, "Total")) %>% 
+  select(-disorder_timeframe)
+
+ggplot(disorder_group_46, aes(x = Age, y = Aust, fill = disorder_group))+
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(.~Year, ncol = 1)+
+  labs(title = "Disorder Categories by Age, 2007 and 2020-21",
+       y = "Percentage of all population (%)",
+       x = "Age group")+
+  theme_bw()+
+  scale_fill_brewer(palette = "Dark2", name = "Disorder types")
+```
+
+### Subcategories
+
+```{r}
+specific_disorder_tab <- disorder_group %>% 
+  filter(specific_disorder!="") %>% 
+  pivot_wider(names_from = c(Sex,Year),
+              values_from = Aust)
+
+specific_disorder_tab %>% 
+  select(-disorder_group) %>% 
+  kable(format = "html",
+        col.names = c("Disorder Types",rep(c("Male(%)","Female(%)","All(%)"),2)),
+        caption = "Prevalence of 12-Month Mental Disorders by Subcategory for 2020-21 and 2007",
+      ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>% 
+  kable_classic(full_width = F, html_font = "Cambria") %>% 
+  add_header_above(c(" "=1, "2020-21"=3, "2007"=3), bold = TRUE) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  pack_rows("Anxiety disorders",1,6) %>% 
+  pack_rows("Affective disorders",7,9) %>% 
+  pack_rows("Substance use disorders",10,12) %>% 
+  column_spec(c(2,5), color = "#2196F3") %>% 
+  column_spec(c(3,6), color = "#F44336")
+  
+```
+
+### Summary
+
+-   In 2007, the prevalence of Affective disorders was consistent for people aged 16-74, while in 2020-21, it is more common among young individuals.
+
+-   The prevalence of both Anxiety disorders and Substance use disorders in both 2007 and 2020-21 generally showed a decreasing trend with increasing ages.
+
+-   The prevalence of Anxiety Disorder is twice as high as the other two. Additionally, the prevalence among females is nearly double that among males, especially in Agoraphobia, Social phobia, and Post-traumatic stress disorder.
+
+-   Males had almost twice the rate of Substance Use disorder than females, especially in Alcohol harmful use.
+
+## 12-Month Mental Health Disorder Characteristics
+
+*Note:*
+
+-   *Some of the prevalence number data have a relatively high standard error and should be used with caution.*
+
+-   *Percentage has a high margin of error and should be used with caution.*
+
+-   *The data have been randomly adjusted to avoid the release of confidential data. Discrepancies may occur between sums of the component items and totals.*
+
+### By Age Group (Generation)
+
+```{r}
+ttl_pop1 <- abs3_type1 %>% 
+  filter(sex == "Persons",
+         name == "Estimates")
+
+pagn <- ggplot(ttl_pop1, aes(x = disorder_types, 
+                     y = value, 
+                     fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Prevalence by Generation, 2020–21",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+ttl_pro1 <- abs3_type1 %>% 
+  filter(
+         sex == "Persons",
+         name == "Proportions")
+
+pagp <- ggplot(ttl_pro1, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Prevalence Percentage by Generation, 2020–21",
+       x = "Disorder types",
+       y = "Percentage of each age group (%)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+grid.arrange(pagn,pagp, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Age Group (Decadal)
+
+```{r}
+ttl_pop2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Estimates")
+
+ttl_pop_p <- ggplot(ttl_pop2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Prevalence by Decadal Age Group, 2020–21",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(labels = comma)
+
+ttl_pro2 <- abs3 %>% 
+  filter(age_group_type == "type2",
+         sex == "Persons",
+         name == "Proportions")
+
+ttl_pro_p <- ggplot(ttl_pro2, aes(x = disorder_types, y = value, fill = age_group)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Prevalence Percentage by Decadal Age Group, 2020–21",
+       x = "Disorder types",
+       y = "Percentage of each age group (%)",
+       fill = "Age group")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")
+
+grid.arrange(ttl_pop_p,ttl_pro_p, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Sex
+
+```{r}
+ttl_pop_sex1 <- abs3 %>% 
+  filter(sex != "Persons",
+         name == "Estimates")
+
+ttl_pop_sex_p <- ggplot(ttl_pop_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Prevalence by Sex, 2020–21",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+
+
+ttl_pro_sex1 <- abs3 %>% 
+  filter(age_group_type == "Total",
+         name == "Proportions",
+         sex != "Persons")
+
+ttl_pro_sex_p <- ggplot(ttl_pro_sex1, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Prevalence Percentage by Sex, 2020–21",
+       x = "Disorder types",
+       y = "Percentage of each sex (%)",
+       fill = "Sex")+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+
+grid.arrange(ttl_pop_sex_p,ttl_pro_sex_p, ncol=1)
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Generation and Sex
+
+```{r}
+# Plots for bigger age groups
+big_pop_sex <- abs3_type1 %>% 
+  filter(age_group_type == "type1",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(big_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Prevalence by Generation and Sex, 2020–21",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+
+# Plots for bigger age groups
+big_pro_sex <- abs3_type1 %>% 
+  filter(age_group_type == "type1",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(big_pro_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Prevalence Percentage by Generation and Sex, 2020–21",
+       x = "Disorder types",
+       y = "Percentage (%)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 1)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### By Decadal Age Group and Sex
+
+```{r}
+# Plots for smaller age groups
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Estimates",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Est. Prevalence by Decadal Age Group and Sex, 2020–21",
+       x = "Disorder types",
+       y = "Population('000)",
+       fill = "Sex")+
+  facet_wrap(~age_group, ncol = 2)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()+
+  scale_y_continuous(labels = comma)
+
+# Plots for smaller age groups
+sml_pop_sex <- abs3 %>% 
+  filter(age_group_type == "type2",
+         name == "Proportions",
+         sex != "Persons")
+
+ggplot(sml_pop_sex, aes(x = disorder_types, y = value, fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip()+
+  labs(title = "Prevalence Percentage by Decadal Age Group and Sex, 2020–21",
+       x = "Disorder types",
+       y = "Percentage (%)",
+       fill = "Sex")+
+  facet_wrap(~age_group)+
+  guides(fill = guide_legend(reverse=TRUE))+
+  scale_fill_manual(values = sex_palette2)+
+  theme_bw()
+```
+
+*Note: Percentages have been randomly adjusted to avoid the release of confidential data. The percentages **do not sum to 100%**.*
+
+### Summary
+
+-   The prevalence of 12-month mental disorders is highest among young individuals, particularly those aged 16-24, and generally decreases with age.
+
+-   Females consistently show a higher prevalence than males across all age groups.
+
+-   Except for the age group 25-34, males have higher Substance Use Disorders than females, with a particularly noticeable high prevalence in the 16-24 and 35-54 age groups.
+
+-   Females exhibit a remarkably higher prevalence of Anxiety Disorders across all age groups.
+
+-   The prevalence of Affective Disorders is generally higher among females than males across all age groups, except for 55-64.
+
+# Community Mental Health Care (CMHC) Service
+
+```{r}
+#CMHC data
+
+data_dir <- file.path(here::here(), "data", "AIHW")
+aihw9 <- readRDS(file.path(
+  data_dir,
+  "patients-by-demographic-states.rds"
+))
+
+# clean the variable names for visualisation
+aihw9$count <- gsub("Per_cent", "Percentage",aihw9$count)
+aihw9$count <- gsub("Rate_per_1000_population", "Rate (per 1,000 population)",aihw9$count)
+
+aihw9_age_df <- aihw9 %>% 
+  filter(demographic == "Age group")
+
+aihw9_age_df$demographic_variable <- gsub(" years","",aihw9_age_df$demographic_variable)
+aihw9_age_df$demographic_variable <- gsub(" and over","+",aihw9_age_df$demographic_variable)
+
+# factors for plot
+aihw9_age_df$demographic_variable <- factor(aihw9_age_df$demographic_variable, levels = c("0-4","5-11","12-17","18-24","25-34","35-44","45-54","55-64","65-74","75-84","85+"))
+
+
+# Table name: *`r aihw9$table_name[1]`*. 
+# Table code: *`r aihw9$table_code[1]`*. 
+# Data source: *`r aihw9$source[1]`*.
+```
+
+## About the Data
+
+Mental illness is often treated in community and hospital-based outpatient care services provided by state and territory governments. Collectively, these services are referred to as **community mental health care (CMHC)** services.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/community-services#data).
+
+## CMHC Patients
+
+### By Age Group
+
+```{r}
+# manual blue pal
+n_levels <- length(unique(aihw9_age_df$demographic_variable))
+blue_pal <- colorRampPalette(c("#91BFD0", "#08306B"))(n_levels)
+color_mapping <- setNames(blue_pal, unique(aihw9_age_df$demographic_variable))
+
+ggplot(aihw9_age_df %>% filter(states_and_territories == "Total"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  labs(x = "Measurement",
+       y = "Value",
+       title = "CMHC Patients by Age group, 2020-21",
+       fill = "Age group") + 
+  facet_wrap(~count, scales = "free",ncol = 1)+
+  scale_fill_manual(values = color_mapping)
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### By Age Group and States or Territories
+
+```{r}
+ggplot(aihw9_age_df %>% filter(count == "Number"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Number",
+       title = "Number of CMHC Patients, 2020–21",
+       fill = "Age group") +
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)
+
+
+ggplot(aihw9_age_df %>% filter(count == "Percentage"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw() +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Percentage",
+       title = "Percentage of CMHC Patients, 2020–21",
+       fill = "Age group")+
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)
+
+ggplot(aihw9_age_df %>% filter(count == "Rate (per 1,000 population)"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw() +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Percentage",
+       title = "Percentage",
+       fill = "Age group") +
+  facet_wrap(~states_and_territories)+
+  labs(x = "Age group",
+       y = "Rate (per 1,000 population)",
+       title = "Rate (per 1,000 population) of CMHC Patients, 2020–21")+
+  coord_flip()+
+  scale_fill_manual(values = color_mapping)
+  
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### By Sex
+
+```{r}
+ggplot(aihw9 %>% filter(demographic == "Sex", states_and_territories == "Total"), 
+       aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  scale_y_continuous(labels = comma)+
+  theme_bw()+
+  theme(legend.position = "none")+
+  labs(x = "Sex",
+       y = "Value",
+       title = "CMHC Patients by Age group, 2020-21",
+       fill = "Sex") + 
+  facet_wrap(~count, scales = "free",nrow = 1)+
+  scale_fill_manual(values = sex_palette2)
+```
+
+### By Sex and States or Territories
+
+```{r}
+aihw9_sex_df <- aihw9 %>% 
+  filter(demographic == "Sex") %>% 
+  pivot_wider(names_from = demographic_variable, values_from = value) %>% 
+  mutate(f_m_diff = Female -  Male,
+         tf = case_when(f_m_diff >=0 ~ "T",
+                        .default = "F")) 
+
+ggplot(aihw9_sex_df, aes(x = states_and_territories, y = f_m_diff, fill = tf)) +
+  geom_bar(position="dodge", stat="identity")+
+  facet_wrap(~count, scales = "free")+
+  theme_bw()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = c("#2196F3","#F44336"))+
+  labs(x = "States or Territories",
+       y = "Value Difference (Female - Male)",
+       title = "The Value Difference of Female and Male CMHC Patients, 2020–21")
+```
+
+*Note: Rate stands for the number of patients receiving services per 1,000 population.*
+
+### Summary
+
+Patients rate:
+
+-   Teenagers aged 12-17 have the highest patient rates across all age groups.
+
+-   Patient rates generally decrease with age but show an uptick for individuals over 75, especially in WA and Tas.
+
+-   Vic has the lowest overall patient rate and shows minimal variation across age groups.
+
+-   Females have higher patient rates than males, with exceptions in NT and significant trends observed in WA, ACT, and Tas.
+
+Patient characteristics:
+
+-   The age distribution of patients exhibits a bell-shaped, right-skewed curve, with the peak in the 25-34 age group.
+
+-   Significantly higher percentages and numbers of patients are aged 12-17 in NSW, Qld, WA, SA, and Tas.
+
+-   Except in NT, female patients outnumber male patients across all states. The highest numbers of female patients are found in NSW and WA, and the percentage of female patients is especially high in WA, Tas, and ACT.
+
+## CMHC Contacts
+
+CMHC service contacts can be conducted as either individual or group sessions. Service contacts can also be face-to-face, via telephone, or using other forms of direct communication such as video link. They can be conducted in the presence of the patient, with a third party (such as a carer or family member) and/or other professional or mental health worker.
+
+```{r}
+## Load data
+
+data_dir <- file.path(here::here(), "data", "AIHW")
+
+aihw10 <- readRDS(file.path(
+  data_dir,
+  "contacts-per1000-sex-age.rds"
+))
+
+aihw10$year <- gsub("–\\d{2}", "", aihw10$year)
+aihw10$year <- as.numeric(aihw10$year)
+
+# Table name: *`r aihw10$table_name[1]`*.
+# 
+# Table code: *`r aihw10$table_code[1]`*.
+# 
+# Data source: *`r aihw10$source[1]`*.
+```
+
+### Average Annual Change by Sex and Age
+
+```{r}
+ggplot(aihw10, 
+       aes(x = age_group,
+           y = average_annual_change_per_cent_2016_17_to_2020_21,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Average annual change (%)",
+       title = "Avg. Annual Contact Change by Sex and Age, 2016–17 to 2020–21",
+       fill = "Sex")+
+  theme_bw()
+  
+```
+
+### Changes Over Time by Age Aroup
+
+#### Male Patients
+
+```{r}
+mts <- aihw10 %>% 
+  filter(sex == "Males")
+
+ggplot(mts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line(color = "#2196F3")+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)",
+       title = "Male Contact Rate Trends by Age Group, 2005-2020")+
+  scale_y_continuous(breaks = c(0, 300, 600, 900))+
+  theme_bw()
+```
+
+#### Female Patients
+
+```{r}
+fts <- aihw10 %>% 
+  filter(sex == "Females")
+
+ggplot(fts, aes(x = year, y = contacts_per1000_pop)) +
+  geom_line(color = "#F44336")+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Contacts (per 1,000 population)",
+       title = "Female Contact Rate Trends by Age Group, 2005-2020")+
+  theme_bw()
+```
+
+### Summary
+
+5-year change over 2016-2020:
+
+-   Contacts rate for children aged 0-11 significantly declined for both sex.
+
+-   A notable increase in contacts among young individuals aged 12-24, with females showing a particularly strong uptick.
+
+-   Middle-aged and elderly individuals (45-74) showed an upward trend in contacts rate, with males contributing significantly to this increase.
+
+15-year change over 2005-2020:
+
+-   Between 2005 and 2020, there was a modest increase in contact rates for both males and females.
+
+-   Males aged 12-54 had the highest contact rates among all age groups, and it also shows an increasing trend in the 15 years.
+
+-   Contact rates for young females (aged 12-24) roughly tripled during the 15 years, while rates for other age groups remained stable.
+
+# Specialist Homelessness Services
+
+## About the Data
+
+This section is about the clients who identified as having a current mental health issue and received specialist homelessness services (SHS).
+
+**Specialist homelessness service(s) (SHS)** is assistance provided by a specialist homelessness agency to a client aimed at responding to or preventing homelessness. The specialist homelessness services in scope for this collection include accommodation provision, assistance to sustain housing, mental health services, family/relationship assistance, disability services, drug/alcohol counselling, legal/financial services, immigration/cultural services, domestic/family violence services, other specialist services and general assistance and support.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/specialist-homelessness-services).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+shs2 <- readRDS(file.path(
+  data_dir,
+  "shs2-shs-mental-health-issue-demographic.rds"
+))
+
+# Table name: *`r shs2$table_name[1]`*. 
+# 
+# Table code: *`r shs2$table_code[1]`*. 
+# 
+# Data source: *`r shs2$source[1]`*.
+
+# clean the variable names for visualisation
+shs2$measurement <- gsub("Per cent", "Percentage",shs2$measurement)
+
+y <- shs2 %>%
+  filter(mental_health_issue == "True")
+```
+
+### By Age Group
+
+```{r}
+n_levels <- length(unique(y$client_demographics))
+rmhc_blue_pal <- colorRampPalette(c("#91BFD0", "#08306B"))(n_levels)
+
+# fig.height=10
+y %>% 
+  filter(group == "Age group") %>% 
+  ggplot(aes(x = client_demographics, y = value, fill = client_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age group",
+       y = "Value",
+       title = "Recipients of SHS by Age Group, 2020-21",
+       fill = "Age group")+
+  theme_bw()+
+  scale_fill_manual(values = rmhc_blue_pal)
+```
+
+### By Sex
+
+```{r}
+y %>% 
+  filter(group == "Sex") %>% 
+  ggplot(aes(x = client_demographics, y = value, fill = client_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y")+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value",
+       title = "Recipients of SHS by Age Group, 2020-21")+
+  theme_bw()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = sex_palette2)
+```
+
+### Summary
+
+SHS recipients' rate:
+
+-   Young adults aged 15-24 constitute the highest percentage of those with current mental health issues who also receive SHS.
+
+-   A decline in SHS recipient rates is observed as age increases.
+
+-   Females significantly outnumber males in receiving these services.
+
+SHS recipients' characteristics:
+
+-   The characteristics are similar to those of the general population - age distribution is bell-shaped and 25-44.
+
+-   The number and percentage of female recipients are much higher than males.
+
+# Residential Mental Health Care (RMHC) Services
+
+## About the Data
+
+**Residential mental health care (RMHC)** services provide specialised mental health care on an overnight basis in a domestic-like environment. RMHC services may include rehabilitation, treatment or extended care.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/residential-services).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc3 <- readRDS(file.path(
+  data_dir,
+  "rmhc3-ppl-accessing-rmhc.rds"
+))
+
+
+# Table name: *`r rmhc3$table_name[1]`*. 
+# 
+# Table code: *`r rmhc3$table_code[1]`*. 
+# 
+# Data source: *`r rmhc3$source[1]`*.
+```
+
+## Resident Characteristics
+
+*Note: A **resident** is a person who receives residential care intended to be for a minimum of 1 night.*
+
+### By Age Group
+
+```{r}
+rmhc3 %>% 
+  filter(demographic == "Age_group") %>% 
+  ggplot(aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Age group",
+       y = "Value",
+       title = "People Accessing RMHC by Age Group, 2020-21")+
+  theme_bw()+
+  scale_fill_brewer(palette = "Blues")+
+  theme(legend.position = "none")
+```
+
+### By Sex
+
+```{r}
+rmhc3 %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = demographic_variable, y = value, fill = demographic_variable))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 3)+
+  scale_y_continuous(labels = comma)+
+  labs(x = "Sex",
+       y = "Value",
+       title = "People Accessing RMHC by Sex, 2020-21")+
+  theme_bw()+
+  scale_fill_manual(values = sex_palette2)+
+  theme(legend.position = "none")
+```
+
+### Summary
+
+-   Individuals aged 18-24 have the highest rate of accessing RMHC, at approximately 6 per 10,000 population. For those aged 25-54, the rate stabilizes at around 4 per 10,000.
+
+-   Females have a higher rate, population, and percentage of accessing RMHC.
+
+## RMHC Service Episodes Rate
+
+**Episodes of residential care** are defined as a period of care between the start of residential care (either through the formal start of the residential stay or the start of a new reference period (that is, 1 July)) and the end of residential care (either through the formal end of residential care, commencement of leave intended to be greater than 7 days, or the end of the reference period (that is, 30 June)). An individual can have one or more episodes of care during the reference period.
+
+```{r}
+# load the data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc4 <- readRDS(file.path(
+  data_dir,
+  "rmhc4-rmhc-by-sex-age-states.rds"
+))
+
+
+# Table name: *`r rmhc4$table_name[1]`*. 
+# 
+# Table code: *`r rmhc4$table_code[1]`*. 
+# 
+# Data source: *`r rmhc4$source[1]`*.
+```
+
+```{r}
+# load the data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc7 <- readRDS(file.path(
+  data_dir,
+  "rmhc7-rmhc-ts-by-age-sex.rds"
+))
+
+rmhc7_rsa <- rmhc7 %>% 
+  filter(count == "Rate_per_10_000_population",
+         demographic %in% c("Sex", "Age_group"))
+rmhc7_rsa$year <- gsub("–\\d{2}", "", rmhc7_rsa$year)
+rmhc7_rsa$year <- as.numeric(rmhc7_rsa$year)
+
+# Table name: *`r rmhc7$table_name[1]`*. 
+# 
+# Table code: *`r rmhc7$table_code[1]`*. 
+# 
+# Data source: *`r rmhc7$source[1]`*.
+
+```
+
+### General Sex and Age Characteristics
+
+#### By Sex and Age Group
+
+```{r}
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+rmhc4 %>% 
+  filter(count != "Number",
+         states_and_territories == "Total") %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes Rate by Age Group and Sex, 2020-21",
+       fill = "Sex")+
+  theme_bw()
+```
+
+#### Summary
+
+-   Females aged 18-24 exhibit an exceptionally high episode rate, exceeding 10 per 10,000 population.
+
+-   For ages 25-54, the episode rates are generally similar across both genders, though slightly higher for females, with an average of about 5 per 10,000 population.
+
+-   Young girls aged 12-17 experience exceptionally higher episode rates than boys in the same age group.
+
+### Sex and Age Characteristics by States or Territories
+
+#### By Sex and States or Territories
+
+```{r}
+rmhc4 %>% 
+  filter(count != "Number",
+         #states_and_territories != "Total",
+         age_group != "Total") %>% 
+  ggplot(aes(x = states_and_territories, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "States or territories",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes rate by states or territories, 2020-21",
+       fill = "Sex")+
+  theme_bw()
+```
+
+*Note: Data for **ACT** is not applicable and should not be interpreted as zero. Some data for **NSW** is rounded to zero.*
+
+#### By Sex, Age Group, States or Territories
+
+```{r}
+rmhc4 %>% 
+  filter(count != "Number",
+         age_group != "Total",
+         states_and_territories != "Total"
+         ) %>% 
+  ggplot(aes(x = age_group, y = value, fill = sex))+
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  facet_wrap(~states_and_territories,
+             ncol = 2)+
+  labs(x = "Age group",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes Rate by Sex, Age Group, States or Territories, 2020-21",
+       fill = "Sex")+
+  theme_bw()
+```
+
+*Note: Data for **ACT** is not applicable and should not be interpreted as zero. Some data for **NSW** is rounded to zero.*
+
+#### Summary
+
+-   Tasmania has the highest episode rate among all states or territories, while New South Wales registers have the lowest, nearly reaching zero.
+
+-   Female rates are generally higher across most states or territories, notably among young women aged 18-24 in Victoria and South Australia.
+
+-   The Northern Territory is an exception where the male rate is about double the female rate, attributed to a low female rate.
+
+-   Episode rates in Queensland and Western Australia are moderate, with all values less than 10 per 10,000 population.
+
+### Episode Rates Changes Over Time
+
+#### Average Annual Episodes Change
+
+```{r}
+## Load data
+data_dir <- file.path(here::here(), "data", "AIHW")
+rmhc6 <- readRDS(file.path(
+  data_dir,
+  "rmhc6-rmhc-per-10000-pop-by-sex-n-age.rds"
+))
+
+rmhc6$year <- gsub("–\\d{2}", "", rmhc6$year)
+rmhc6$year <- as.numeric(rmhc6$year)
+
+# Table name: *`r rmhc6$table_name[1]`*. 
+# 
+# Table code: *`r rmhc6$table_code[1]`*. 
+# 
+# Data source: *`r rmhc6$source[1]`*.
+```
+
+```{r}
+sex_palette <- c("#4CAF50","#F44336","#2196F3")
+
+ggplot(rmhc6, 
+       aes(x = age_group,
+           y = average_annual_change_per_cent_2016_17_to_2020_21,
+           fill = sex)) +
+  geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = sex_palette)+
+  labs(x = "Age group",
+       y = "Average annual change (%)",
+       title = "Average Annual Episodes Change by Sex and Age group, 2016–17 to 2020–21",
+       fill = "Sex")+
+  theme_bw()
+  
+```
+
+#### Episodes Changes Over the Year by Age and Sex
+
+```{r}
+rmhc7_rsa %>% 
+  filter(demographic == "Sex") %>% 
+  ggplot(aes(x = year, y = value, color = demographic_variable)) +
+  geom_line()+
+  labs(x = "Year",
+       y = "Rate (per 10,000 population)",
+       title = "Episodes Rate Changes by Sex Over Year 2005–06 to 2020–21",
+       color = "Sex")+
+  theme_bw()+
+  scale_color_manual(values = sex_palette2)
+
+# for analysis
+rmhc7_a <- rmhc7_rsa %>% 
+  filter(demographic == "Sex",
+         year == min(year) | year == max(year)) 
+```
+
+```{r}
+ggplot(rmhc6, aes(x = year, y = episodes_per_10_000_pop, color = sex)) +
+  geom_line()+
+  facet_wrap(~age_group)+
+  labs(x = "Year",
+       y = "Episodes (per 10,000 population)",
+       title = "Episodes Change by Age and Sex Over Year 2005–06 to 2020–21",
+       color = "Sex")+
+  scale_color_manual(values = sex_palette)+
+  theme_bw()
+```
+
+### Summary
+
+-   From 2005-06 to 2020-21, the female episode rate quadrupled from 0.9 to 3.9, while the male rate doubled.
+
+-   From 2005 to 2012, the male episode rate was higher than females; between 2012 and 2015, the rates for both genders were the same; from 2015 onwards, the female episode rate surpassed the male rate. This symptom is largely driven by the trend in young women aged 18-24.
+
+# Psychosocial Disability Support Services
+
+**Psychosocial disability\* support services** are critical in assisting people with psychosocial disability overcome functional limitations (for example, with communication, daily living or self-care) and facilitating full and equal participation in the community.
+
+This section presents information on specialist disability support services provided under the National Disability Insurance Scheme (NDIS) to participants with a **primary disability\*** of psychosocial disability.
+
+The data used for this section came from [Australian Institute of Health and Welfare (AIHW)](https://www.aihw.gov.au/mental-health/topic-areas/psychosocial-disability-support).
+
+```{r}
+data_dir <- file.path(here::here(), "data", "AIHW")
+dis4 <- readRDS(file.path(
+  data_dir,
+  "dis4-ndis-active-by-demographic.rds"
+))
+
+dis4_sa <- dis4 %>% 
+  filter(group %in% c("State_or_territory", "Age_group"))
+
+# Table name: *`r dis4$table_name[1]`*. 
+# 
+# Table code: *`r dis4$table_code[1]`*. 
+# 
+# Data source: *`r dis4$source[1]`*.
+```
+
+## By States or Territory
+
+```{r}
+dis4_sa <- dis4_sa %>% 
+  filter(group == "State_or_territory")
+
+# add state levels
+state_levels <- c("NSW","Vic","Qld","WA","SA","Tas","ACT","NT")
+dis4_sa$participant_demographics <- factor(dis4_sa$participant_demographics,levels = state_levels)
+
+ggplot(dis4_sa, aes(x = participant_demographics, y = value))+
+geom_col()+
+facet_wrap(~measurement,
+           scales = "free_y",
+           ncol = 1) +
+scale_y_continuous(labels = comma) +
+labs(x = "States or Territory",
+     y = "Value",
+     title = "NDIS Psychosocial Participants, by States or Territory, as of Dec 2021")+
+theme_bw()
+
+# for analysis
+dis4_sa_a <- dis4_sa %>% 
+  filter(measurement == "Rate (per 100,000 population)")
+```
+
+## By Age
+
+```{r}
+dis4_age <- dis4 %>% 
+  filter(group == "Age_group")
+
+n_levels <- length(unique(dis4_age$participant_demographics))
+dis_blue_pal <- colorRampPalette(c("#B3E2F2", "#08306B"))(n_levels)
+
+dis4_age %>% 
+  filter(group == "Age_group") %>% 
+  ggplot(aes(x = participant_demographics, y = value, fill = participant_demographics))+
+  geom_col()+
+  facet_wrap(~measurement,
+             scales = "free_y",
+             ncol = 1) +
+  scale_y_continuous(labels = comma) +
+  labs(x = "Age group",
+       y = "Value",
+       title = "NDIS Psychosocial Participants, by Age Group, as of Dec 2021",
+       fill = "Age groups")+
+  theme_bw()+
+  scale_fill_manual(values = dis_blue_pal)+
+  theme(legend.position = "none")
+
+# for analysis
+dis4_sa_a2 <- dis4 %>% 
+  filter(group == "Age_group",
+         measurement == "Rate (per 100,000 population)")
+```
+
+## Summary
+
+-   Vic and ACT have the highest rates, with approximately 250 per 100,000. Other states and territories show similar, lower rates, ranging from 170 to 190 per 100,000.
+
+-   The rate, number, and percentage of active patients all display a similar trend across age groups, increasing progressively with age but experiencing a decline after age 65+.
